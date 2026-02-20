@@ -8,7 +8,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Film> Films { get; set; } = null!;
     public DbSet<MovieHalls> MovieHalls { get; set; } = null!;
     public DbSet<Screenings> Screenings { get; set; } = null!;
-    public DbSet<Purchase> Purchases { get; set; } = null!;
+    public DbSet<Guest> Guests { get; set; } = null!;
     public DbSet<Tickets> Tickets { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -34,27 +34,15 @@ public class ApplicationDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Tickets>()
-            .HasOne(t => t.Purchase)
-            .WithMany(p => p.Tickets)
-            .HasForeignKey(t => t.PurchaseId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Tickets>()
-            .HasOne(t => t.Buyer)
+            .HasOne(t => t.User)
             .WithMany(u => u.TicketsBought)
-            .HasForeignKey(t => t.BuyerId)
+            .HasForeignKey(t => t.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Tickets>()
-            .HasOne(t => t.Cashier)
-            .WithMany(u => u.TicketsValidated)
-            .HasForeignKey(t => t.CashierId)
+            .HasOne(t => t.Guest)
+            .WithMany(g => g.Tickets)
+            .HasForeignKey(t => t.GuestId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Purchase>()
-            .HasOne(p => p.User)
-            .WithMany(u => u.Purchases)
-            .HasForeignKey(p => p.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
     }
 }

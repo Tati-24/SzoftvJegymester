@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AspNetServer.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260219074006_Init")]
+    [Migration("20260220181321_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -30,14 +30,23 @@ namespace AspNetServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<string>("AgeRating")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("Length")
-                        .HasColumnType("int");
+                    b.Property<string>("Director")
+                        .HasColumnType("longtext");
 
-                    b.Property<int>("Rating")
+                    b.Property<string>("Genre")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("Lengt")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("ReleaseDate")
@@ -52,47 +61,49 @@ namespace AspNetServer.Migrations
                     b.ToTable("Films");
                 });
 
+            modelBuilder.Entity("Guest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Guests");
+                });
+
             modelBuilder.Entity("MovieHalls", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<int>("AvailableSeats")
-                        .HasColumnType("int");
-
                     b.Property<string>("HallName")
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<bool>("IsOccupied")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("SeatCount")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.ToTable("MovieHalls");
-                });
-
-            modelBuilder.Entity("Purchase", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<int>("FullPrice")
-                        .HasColumnType("int");
-
-                    b.Property<string>("GuestEmail")
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime>("PurchaseDate")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Purchases");
                 });
 
             modelBuilder.Entity("Screenings", b =>
@@ -101,13 +112,13 @@ namespace AspNetServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<int>("BasePrice")
-                        .HasColumnType("int");
+                    b.Property<decimal>("BasePrice")
+                        .HasColumnType("decimal(65,30)");
 
                     b.Property<Guid>("FilmId")
                         .HasColumnType("char(36)");
 
-                    b.Property<bool>("MovieActive")
+                    b.Property<bool>("IsCancelled")
                         .HasColumnType("tinyint(1)");
 
                     b.Property<Guid>("MovieHallId")
@@ -131,20 +142,20 @@ namespace AspNetServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<DateTime?>("ApprovedDate")
+                    b.Property<DateTime?>("CancelledAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<Guid>("BuyerId")
+                    b.Property<Guid?>("GuestId")
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid?>("CashierId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<bool>("IsConfirmed")
+                    b.Property<bool>("IsCancelled")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<Guid>("PurchaseId")
-                        .HasColumnType("char(36)");
+                    b.Property<bool>("IsValidated")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("PurchasedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<Guid>("ScreeningId")
                         .HasColumnType("char(36)");
@@ -152,18 +163,22 @@ namespace AspNetServer.Migrations
                     b.Property<int>("SeatNumber")
                         .HasColumnType("int");
 
-                    b.Property<int>("TicketPrice")
-                        .HasColumnType("int");
+                    b.Property<decimal>("TicketPrice")
+                        .HasColumnType("decimal(65,30)");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("ValidatedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BuyerId");
-
-                    b.HasIndex("CashierId");
-
-                    b.HasIndex("PurchaseId");
+                    b.HasIndex("GuestId");
 
                     b.HasIndex("ScreeningId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Tickets");
                 });
@@ -174,35 +189,34 @@ namespace AspNetServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
 
                     b.Property<string>("PassWordHash")
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("longtext");
+
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
-                    b.Property<string>("UserName")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("Purchase", b =>
-                {
-                    b.HasOne("User", "User")
-                        .WithMany("Purchases")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Screenings", b =>
@@ -226,22 +240,10 @@ namespace AspNetServer.Migrations
 
             modelBuilder.Entity("Tickets", b =>
                 {
-                    b.HasOne("User", "Buyer")
-                        .WithMany("TicketsBought")
-                        .HasForeignKey("BuyerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("User", "Cashier")
-                        .WithMany("TicketsValidated")
-                        .HasForeignKey("CashierId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Purchase", "Purchase")
+                    b.HasOne("Guest", "Guest")
                         .WithMany("Tickets")
-                        .HasForeignKey("PurchaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Screenings", "Screening")
                         .WithMany("Tickets")
@@ -249,13 +251,16 @@ namespace AspNetServer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Buyer");
+                    b.HasOne("User", "User")
+                        .WithMany("TicketsBought")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
-                    b.Navigation("Cashier");
-
-                    b.Navigation("Purchase");
+                    b.Navigation("Guest");
 
                     b.Navigation("Screening");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Film", b =>
@@ -263,14 +268,14 @@ namespace AspNetServer.Migrations
                     b.Navigation("Screenings");
                 });
 
+            modelBuilder.Entity("Guest", b =>
+                {
+                    b.Navigation("Tickets");
+                });
+
             modelBuilder.Entity("MovieHalls", b =>
                 {
                     b.Navigation("Screenings");
-                });
-
-            modelBuilder.Entity("Purchase", b =>
-                {
-                    b.Navigation("Tickets");
                 });
 
             modelBuilder.Entity("Screenings", b =>
@@ -280,11 +285,7 @@ namespace AspNetServer.Migrations
 
             modelBuilder.Entity("User", b =>
                 {
-                    b.Navigation("Purchases");
-
                     b.Navigation("TicketsBought");
-
-                    b.Navigation("TicketsValidated");
                 });
 #pragma warning restore 612, 618
         }

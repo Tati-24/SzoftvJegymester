@@ -23,13 +23,37 @@ namespace AspNetServer.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Description = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    Length = table.Column<int>(type: "int", nullable: false),
-                    Rating = table.Column<int>(type: "int", nullable: false),
-                    ReleaseDate = table.Column<DateTime>(type: "datetime(6)", nullable: false)
+                    Lengt = table.Column<int>(type: "int", nullable: false),
+                    AgeRating = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ReleaseDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    Genre = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Director = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Films", x => x.Id);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Guests",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    Name = table.Column<string>(type: "varchar(150)", maxLength: 150, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Email = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    PhoneNumber = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Guests", x => x.Id);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -40,7 +64,8 @@ namespace AspNetServer.Migrations
                     Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     HallName = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    AvailableSeats = table.Column<int>(type: "int", nullable: false)
+                    SeatCount = table.Column<int>(type: "int", nullable: false),
+                    IsOccupied = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -55,11 +80,15 @@ namespace AspNetServer.Migrations
                     Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     Email = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    PhoneNumber = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     Role = table.Column<int>(type: "int", nullable: false),
                     PassWordHash = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    UserName = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4")
+                    Name = table.Column<string>(type: "varchar(150)", maxLength: 150, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -75,8 +104,8 @@ namespace AspNetServer.Migrations
                     FilmId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     MovieHallId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     StartTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    BasePrice = table.Column<int>(type: "int", nullable: false),
-                    MovieActive = table.Column<bool>(type: "tinyint(1)", nullable: false)
+                    BasePrice = table.Column<decimal>(type: "decimal(65,30)", nullable: false),
+                    IsCancelled = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -97,51 +126,30 @@ namespace AspNetServer.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Purchases",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    UserId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    GuestEmail = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    PurchaseDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    FullPrice = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Purchases", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Purchases_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
                 name: "Tickets",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     ScreeningId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    PurchaseId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    BuyerId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    CashierId = table.Column<Guid>(type: "char(36)", nullable: true, collation: "ascii_general_ci"),
+                    UserId = table.Column<Guid>(type: "char(36)", nullable: true, collation: "ascii_general_ci"),
+                    GuestId = table.Column<Guid>(type: "char(36)", nullable: true, collation: "ascii_general_ci"),
                     SeatNumber = table.Column<int>(type: "int", nullable: false),
-                    TicketPrice = table.Column<int>(type: "int", nullable: false),
-                    IsConfirmed = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    ApprovedDate = table.Column<DateTime>(type: "datetime(6)", nullable: true)
+                    TicketPrice = table.Column<decimal>(type: "decimal(65,30)", nullable: false),
+                    PurchasedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    IsValidated = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    ValidatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    IsCancelled = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    CancelledAt = table.Column<DateTime>(type: "datetime(6)", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Tickets", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Tickets_Purchases_PurchaseId",
-                        column: x => x.PurchaseId,
-                        principalTable: "Purchases",
+                        name: "FK_Tickets_Guests_GuestId",
+                        column: x => x.GuestId,
+                        principalTable: "Guests",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Tickets_Screenings_ScreeningId",
                         column: x => x.ScreeningId,
@@ -149,24 +157,13 @@ namespace AspNetServer.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Tickets_Users_BuyerId",
-                        column: x => x.BuyerId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Tickets_Users_CashierId",
-                        column: x => x.CashierId,
+                        name: "FK_Tickets_Users_UserId",
+                        column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Purchases_UserId",
-                table: "Purchases",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Screenings_FilmId",
@@ -179,24 +176,19 @@ namespace AspNetServer.Migrations
                 column: "MovieHallId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tickets_BuyerId",
+                name: "IX_Tickets_GuestId",
                 table: "Tickets",
-                column: "BuyerId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Tickets_CashierId",
-                table: "Tickets",
-                column: "CashierId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Tickets_PurchaseId",
-                table: "Tickets",
-                column: "PurchaseId");
+                column: "GuestId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tickets_ScreeningId",
                 table: "Tickets",
                 column: "ScreeningId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Tickets_UserId",
+                table: "Tickets",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -206,7 +198,7 @@ namespace AspNetServer.Migrations
                 name: "Tickets");
 
             migrationBuilder.DropTable(
-                name: "Purchases");
+                name: "Guests");
 
             migrationBuilder.DropTable(
                 name: "Screenings");

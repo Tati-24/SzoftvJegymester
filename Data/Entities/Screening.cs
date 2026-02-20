@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 public class Screenings
 {
@@ -11,8 +13,10 @@ public class Screenings
     public MovieHalls MovieHall { get; set; } = null!;
 
     public DateTime StartTime { get; set; }
-    public int BasePrice { get; set; }
-    public bool MovieActive { get; set; } = true;
+
+    public decimal BasePrice { get; set; }
+
+    public bool IsCancelled { get; set; }
 
     public ICollection<Tickets> Tickets { get; set; } = new List<Tickets>();
 }
