@@ -21,14 +21,16 @@ public class AuthController : ControllerBase
     [HttpPost("/register")]
     public async Task<ActionResult<AuthResponse>> Register(RegisterRequest dto)
     {
-        if(await _db.Users.AnyAsync(u => u.Email == dto.Email))
+        var email = dto.Email.Trim().ToLowerInvariant();
+
+        if(await _db.Users.AnyAsync(u => u.Email == email))
         {
             return Conflict("Email already registered");
         }
 
         var user = new User
         {
-            Email = dto.Email,
+            Email = email,
             Name = dto.Name,
             PhoneNumber = dto.PhoneNumber,
             Role = Roles.USER,
@@ -43,10 +45,12 @@ public class AuthController : ControllerBase
     [HttpPost("/login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest dto)
     {
-        var user = await _db.Users.SingleOrDefaultAsync(u => u.Email == dto.Email);
+        var email = dto.Email.Trim().ToLowerInvariant();
+
+        var user = await _db.Users.SingleOrDefaultAsync(u => u.Email == email);
         if(user == null)
         {
-            return Unauthorized();
+            return Conflict("Email not registered or incorrect");
         }
 
         var result = _hasher.VerifyHashedPassword(user, user.PassWordHash, dto.Password);
