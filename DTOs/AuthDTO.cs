@@ -1,3 +1,12 @@
-public record RegisterRequest(string Email, string Password, string Name, string? PhoneNumber);
-public record LoginRequest(string Email, string Password);
+using System.ComponentModel.DataAnnotations;
+
+public record RegisterRequest(
+    [Required, EmailAddress] string Email,
+    [Required, MinLength(8)] string Password,
+    [Required, MaxLength(150)] string Name,
+    [Phone] string? PhoneNumber);
+
+public record LoginRequest(
+    [Required, EmailAddress] string Email,
+    [Required] string Password);
 public record AuthResponse(string Token, DateTime ExpiresAt);
