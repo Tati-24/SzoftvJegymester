@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("fe8b8f5c-fbfa-4c65-86f1-4eaf2ed05aac")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("AspNetServer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e8fad061e174c2b11729f4478c202c409cc209e9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d18fa45793eb0afa5063c58fd4e5a97be9b0a7c5")]
 [assembly: System.Reflection.AssemblyProductAttribute("AspNetServer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AspNetServer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

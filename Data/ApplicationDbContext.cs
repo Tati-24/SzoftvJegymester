@@ -15,6 +15,10 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
         modelBuilder.Entity<Screenings>()
             .HasOne(s => s.Film)
             .WithMany(f => f.Screenings)
