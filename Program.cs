@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +35,19 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<TokenService>();
 
 
+builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("CorsPolicy", policy =>
+            {
+                    policy
+                        .WithOrigins("http://localhost:5173")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+            });
+        });
+
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
@@ -55,6 +69,7 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
+app.UseCors("CorsPolicy");
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
