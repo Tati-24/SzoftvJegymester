@@ -1,6 +1,7 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
     import { login } from './lib/api';
+    import './Login.css';
   
     const dispatch = createEventDispatcher();
   
@@ -21,12 +22,25 @@
         loading = false;
       }
     }
+
+    function goRegister() {
+      dispatch('goRegister');
+    }
   </script>
   
-  <div class="page">
-    <h1>Bejelentkezés</h1>
-  
-    <form on:submit|preventDefault={handleSubmit}>
+  <div class="with-navbar">
+    <nav class="navbar">
+      <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+      <div class="navbar-menu">
+        <button type="button" class="navbar-link">Vetítések</button>
+        <button type="button" class="navbar-link">Filmek</button>
+        <button type="button" class="navbar-link active" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
+      </div>
+    </nav>
+    <div class="page login-page">
+      <h1>Bejelentkezés</h1>
+      <form on:submit|preventDefault={handleSubmit}>
       <label>
         Email
         <input type="email" bind:value={email} required />
@@ -51,67 +65,10 @@
       <p class="register-hint">
         Még nincs fiókja?
         <br>
-        <a href="/register">Kattintson ide a regisztrációhoz</a>
+        <button type="button" class="link-button" on:click={goRegister}>
+          Kattintson ide a regisztrációhoz
+        </button>
       </p>
     </form>
+    </div>
   </div>
-  
-  <style>
-    .page {
-      max-width: 400px;
-      margin: 3rem auto;
-      padding: 2rem;
-      border-radius: 12px;
-      background: #181818;
-      color: #f5f5f5;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    label {
-      display: flex;
-      flex-direction: column;
-      font-size: 0.9rem;
-    }
-    input {
-      margin-top: 0.25rem;
-      padding: 0.6rem 0.8rem;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #101010;
-      color: #f5f5f5;
-    }
-    button {
-      padding: 0.7rem 1rem;
-      border-radius: 999px;
-      border: none;
-      background: #ff4b4b;
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    button:disabled {
-      opacity: 0.6;
-      cursor: default;
-    }
-    .error {
-      color: #ff6b6b;
-      font-size: 0.85rem;
-    }
-    .register-hint {
-      font-size: 0.85rem;
-      margin-top: 0.5rem;
-      text-align: center;
-    }
-    .register-hint a {
-      color: #646cff;
-      text-decoration: none;
-    }
-    .register-hint a:hover {
-      text-decoration: underline;
-    }
-  </style>

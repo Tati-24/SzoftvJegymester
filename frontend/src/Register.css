@@ -1,0 +1,141 @@
+.register-page {
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+  background: var(--card);
+  color: var(--text);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.register-page h1 {
+  font-size: 1.75rem;
+  margin: 0 0 1rem;
+}
+
+.register-page .nav-top,
+.register-page .nav-bottom {
+  margin: -0.25rem 0 0.75rem;
+  text-align: left;
+}
+
+.register-page .nav-bottom {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.register-page .nav-top .link-button,
+.register-page .nav-bottom .link-button {
+  background: none !important;
+  background-color: transparent !important;
+  color: var(--muted);
+  font-weight: normal;
+  box-shadow: none;
+  border: none;
+}
+
+.register-page .nav-top .link-button:hover,
+.register-page .nav-bottom .link-button:hover {
+  background: none !important;
+  background-color: transparent !important;
+  color: var(--text);
+}
+
+.register-page .link-button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-weight: normal;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  font-size: inherit;
+}
+
+.register-page .link-button:hover {
+  color: var(--text);
+}
+
+.register-page .error {
+  color: var(--error);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.register-page .success {
+  color: var(--ok);
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem;
+}
+
+.register-page form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+}
+
+.register-page .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.register-page label {
+  font-size: 0.9rem;
+}
+
+.register-page input {
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.register-page button {
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--red);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.register-page button:hover:not(:disabled) {
+  background: var(--red-hover);
+}
+
+.register-page button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.register-page .login-hint {
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.register-page .login-hint .link-button {
+  background: none;
+  background-color: transparent;
+  color: var(--text);
+}
+
+.register-page .login-hint .link-button:hover {
+  background: none;
+  background-color: transparent;
+  color: var(--text-hover);
+}
+
+.register-page .nav-bottom {
+  text-align: center;
+  margin-top: 1rem;
+  margin-bottom: 0;
+}

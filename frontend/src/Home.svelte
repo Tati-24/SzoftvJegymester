@@ -1,54 +1,22 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { getTestNames } from './lib/api';
-  
-    let names: string[] = [];
-    let loading = true;
-    let error: string | null = null;
-  
-    onMount(async () => {
-      try {
-        names = await getTestNames();
-      } catch (e) {
-        error = e instanceof Error ? e.message : 'Hiba a betöltéskor';
-      } finally {
-        loading = false;
-      }
-    });
+    import { createEventDispatcher } from 'svelte';
+    import './Home.css';
+
+    const dispatch = createEventDispatcher<{ goLogin: void; goRegister: void; goHome: void }>();
   </script>
-  
-  <div class="page">
-    <h1>Kezdőoldal</h1>
-    {#if loading}
-      <p>Betöltés...</p>
-    {:else if error}
-      <p class="error">{error}</p>
-    {:else}
-      <h2>Nevek a backendről:</h2>
-      <ul>
-        {#each names as name}
-          <li>{name}</li>
-        {/each}
-      </ul>
-    {/if}
+
+  <div class="home-page">
+    <nav class="navbar">
+      <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+      <div class="navbar-menu">
+        <button type="button" class="navbar-link">Vetítések</button>
+        <button type="button" class="navbar-link">Filmek</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
+      </div>
+    </nav>
+    <div class="card">
+      <h2>Filmek és vetítések</h2>
+      <p class="muted">A filmek és vetítések listája hamarosan megjelenik.</p>
+    </div>
   </div>
-  
-  <style>
-    .page {
-      max-width: 600px;
-      margin: 3rem auto;
-      padding: 2rem;
-      color: #f5f5f5;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-    ul {
-      list-style: none;
-      padding-left: 0;
-    }
-    li {
-      padding: 0.3rem 0;
-    }
-    .error {
-      color: #ff6b6b;
-    }
-  </style>

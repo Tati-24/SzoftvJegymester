@@ -1,48 +1,64 @@
-const BASE_URL = 'http://localhost:5244';
+const BASE = 'http://localhost:5244';
 
 let token: string | null =
   typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
 
-export function setToken(newToken: string | null) {
-  token = newToken;
+export function setToken(t: string | null) {
+  token = t;
   if (typeof localStorage === 'undefined') return;
-  if (newToken) {
-    localStorage.setItem('token', newToken);
-  } else {
-    localStorage.removeItem('token');
-  }
+  t ? localStorage.setItem('token', t) : localStorage.removeItem('token');
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const headers = new Headers(options.headers);
-
+async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
+  const headers = new Headers(opts.headers);
   headers.set('Content-Type', 'application/json');
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
+  if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, { ...opts, headers });
+  } catch (e) {
+    throw new Error(
+      'A szerver nem elérhető.'
+    );
+  }
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || `Hiba: ${res.status}`);
+    const msg = await res.text();
+    throw new Error(msg || `Hiba: ${res.status}`);
   }
 
-  return (await res.json()) as T;
+  return res.json() as Promise<T>;
 }
 
 export async function login(email: string, password: string) {
-  const data = await request<{ token: string; expiresAt: string }>('/login', {
+  const out = await req<{ token: string; expiresAt: string }>('/login', {
     method: 'POST',
     body: JSON.stringify({ email, password })
   });
-  setToken(data.token);
-  return data;
+  setToken(out.token);
+  return out;
 }
 
-export async function getTestNames() {
-  return await request<string[]>('/');
+export async function register(data: {
+  name: string;
+  email: string;
+  password: string;
+  phoneNumber?: string | null;
+}) {
+  const out = await req<{ token: string; expiresAt: string }>('/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: data.name,
+      email: data.email,
+      password: data.password,
+      phoneNumber: data.phoneNumber ?? null
+    })
+  });
+  setToken(out.token);
+  return out;
+}
+
+export async function getTestNames(): Promise<string[]> {
+  return req<string[]>('/');
 }

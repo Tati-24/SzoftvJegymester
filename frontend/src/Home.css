@@ -1,58 +1,6 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: #f0f0f0;
-  background-color: #0d0d0d;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  --bg: #0d0d0d;
-  --card: #181818;
-  --red: #e63946;
-  --red-hover: #ff4b4b;
-  --text: #f5f5f5;
-  --muted: #888;
-  --border: #333;
-  --input-bg: #101010;
-  --error: #ff6b6b;
-  --ok: #4caf50;
-}
-
-a {
-  font-weight: 500;
-  color: var(--red);
-  text-decoration: none;
-}
-a:hover {
-  color: var(--red-hover);
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-}
-
-#app {
+.home-page {
   width: 100%;
-  margin: 0;
-  padding: 0;
-  text-align: center;
-}
-
-.center-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  min-height: 100vh;
-  width: 100%;
+  min-height: 100%;
 }
 
 .navbar {
@@ -111,16 +59,61 @@ body {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.navbar-link.active {
+.navbar-link-btn {
+  margin-left: 0.5rem;
   background: var(--red);
   color: #fff;
+  font-weight: 600;
 }
 
-.navbar-link.active:hover {
+.navbar-link-btn:hover {
   background: var(--red-hover);
   color: #fff;
 }
 
-.with-navbar {
-  width: 100%;
+.home-page .card {
+  max-width: 420px;
+  margin: 0 auto;
+  width: calc(100% - 2rem);
+  background: var(--card);
+  color: var(--text);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.home-page .card h1 {
+  font-size: 1.75rem;
+  margin: 0 0 1rem;
+}
+
+.home-page > .card > p {
+  margin: 0.5rem 0;
+}
+
+.home-page .card .muted {
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+
+.home-page .error {
+  color: var(--error);
+  font-size: 0.9rem;
+}
+
+.home-page h2 {
+  font-size: 1.1rem;
+  margin: 1rem 0 0.5rem;
+  font-weight: 600;
+}
+
+.home-page ul {
+  text-align: left;
+  list-style: inside;
+  padding-left: 0;
+  margin: 0 0 1rem;
+}
+
+.home-page li {
+  margin: 0.25rem 0;
 }
