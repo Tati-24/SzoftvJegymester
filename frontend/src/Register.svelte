@@ -15,23 +15,31 @@
     let error: string | null = null;
     let success = false;
   
+    // Csak telefonszám formátum: számok, +, szóköz, kötőjel, zárójelek (opcionális mező)
+    const PHONE_REGEX = /^[+]?[0-9\s\-()]{6,25}$/;
+
     async function handleSubmit(event: SubmitEvent) {
       event.preventDefault();
       error = null;
       success = false;
-  
+
       if (!name || !email || !password || !confirmPassword) {
-        error = 'Minden mező kitöltése kötelező.';
+        error = 'Minden mező kitöltése kötelező (név, e-mail, jelszó, jelszó megerősítése).';
         return;
       }
-  
+
       if (password !== confirmPassword) {
         error = 'A jelszavak nem egyeznek.';
         return;
       }
-  
+
       if (password.length < 8) {
         error = 'A jelszónak legalább 8 karakter hosszúnak kell lennie.';
+        return;
+      }
+
+      if (phoneNumber.trim() !== '' && !PHONE_REGEX.test(phoneNumber.trim())) {
+        error = 'A telefonszám csak számokból, +, szóközből, kötőjelből és zárójelekből állhat (pl. +36 20 123 4567).';
         return;
       }
   
@@ -77,7 +85,7 @@
     {/if}
   
     {#if success}
-      <p class="success">Sikeres regisztráció (demó, nincs backend hívás)!</p>
+      <p class="success">Sikeres regisztráció!</p>
     {/if}
   
     <form on:submit={handleSubmit}>
@@ -98,7 +106,9 @@
           type="email"
           bind:value={email}
           required
+          placeholder="pelda@email.hu"
         />
+        <span class="field-hint">Csak valós e-mail formátum fogadható el.</span>
       </div>
 
       <div class="field">
@@ -107,16 +117,19 @@
           id="phoneNumber"
           type="tel"
           bind:value={phoneNumber}
+          placeholder="+36 20 123 4567"
         />
+        <span class="field-hint">Csak telefonszám formátum (számok, +, szóköz, kötőjel, zárójel).</span>
       </div>
   
       <div class="field">
-        <label for="password">Jelszó</label>
+        <label for="password">Jelszó (legalább 8 karakter)</label>
         <input
           id="password"
           type="password"
           bind:value={password}
           required
+          minlength="8"
         />
       </div>
   
