@@ -4,7 +4,7 @@ public record RegisterRequest(
     [Required, EmailAddress] string Email,
     [Required, MinLength(8)] string Password,
     [Required, MaxLength(150)] string Name,
-    [Phone] string? PhoneNumber);
+    [Required][Phone] string PhoneNumber);
 
 public record LoginRequest(
     [Required, EmailAddress] string Email,

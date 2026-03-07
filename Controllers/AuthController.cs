@@ -27,7 +27,6 @@ public class AuthController : ControllerBase
         {
             return Conflict("Email already registered");
         }
-
         var user = new User
         {
             Email = email,
