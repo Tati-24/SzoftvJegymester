@@ -12,7 +12,7 @@ public class Film
     [Required]
     public string Description { get; set; } = null!;
 
-    public int Lengt { get; set; }
+    public int Length { get; set; }
 
     public string? AgeRating { get; set; }
 
