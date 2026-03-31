@@ -29,8 +29,6 @@ Jelenlegi backend helyzet:
 
 Mire lesz szükség még:
                       - Adatok módosítása
-                      - Filmek feltöltése/kezelése (admin, user, cashier)
-                      - Filmek és vetítések megtekintése
                       - Esetleges email rendszer ami visszaigazolja a vásárlást és imitálja a jegyet
                       - Guest vásárlás
                       - Cashier role, kontroller létrehozása és funkciói
