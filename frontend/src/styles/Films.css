@@ -1,0 +1,105 @@
+.films-page {
+  width: 100%;
+  min-height: 100%;
+}
+
+.films-layout {
+  width: calc(100% - 2rem);
+  max-width: 1100px;
+  margin: 0 auto 2rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.films-page .card {
+  background: var(--card);
+  color: var(--text);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  text-align: left;
+}
+
+.films-page h2 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.films-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.films-list li button {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text);
+  text-align: left;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.films-list li button:hover {
+  border-color: var(--red);
+}
+
+.films-list li button.selected {
+  border-color: var(--red);
+  background: rgba(230, 57, 70, 0.12);
+}
+
+.films-list .title {
+  font-weight: 600;
+}
+
+.films-list .meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.film-details h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.3rem;
+}
+
+.film-details .description {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+
+.film-details .details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem 1rem;
+}
+
+.film-details p {
+  margin: 0;
+}
+
+.films-page .muted {
+  color: var(--muted);
+}
+
+.films-page .error {
+  margin-top: 1rem;
+  color: var(--error);
+}
+
+@media (max-width: 860px) {
+  .films-layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,109 @@
+.film-edit-page {
+  width: 100%;
+  min-height: 100%;
+}
+
+.film-edit-layout {
+  width: calc(100% - 2rem);
+  max-width: 1100px;
+  margin: 0 auto 2rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.film-edit-page .card {
+  background: var(--card);
+  color: var(--text);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  text-align: left;
+}
+
+.film-edit-page h2 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.film-picker select,
+.film-form input,
+.film-form textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text);
+  padding: 0.65rem 0.75rem;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.film-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.film-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+}
+
+.film-form .grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+
+.film-form .checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.film-form .checkbox input {
+  width: auto;
+}
+
+.film-form .save-btn {
+  width: fit-content;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--red);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.film-form .save-btn:hover {
+  background: var(--red-hover);
+}
+
+.film-edit-page .muted {
+  color: var(--muted);
+}
+
+.film-edit-page .ok {
+  color: var(--ok);
+  margin: 0.6rem 0 0;
+}
+
+.film-edit-page .error {
+  color: var(--error);
+  margin: 0.6rem 0 0;
+}
+
+@media (max-width: 860px) {
+  .film-edit-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .film-form .grid {
+    grid-template-columns: 1fr;
+  }
+}

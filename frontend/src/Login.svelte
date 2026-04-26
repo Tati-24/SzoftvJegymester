@@ -3,7 +3,13 @@
     import { login } from './lib/api';
     import './Login.css';
   
-    const dispatch = createEventDispatcher();
+    const dispatch = createEventDispatcher<{
+      loggedIn: void;
+      goRegister: void;
+      goHome: void;
+      goLogin: void;
+      goFilms: void;
+    }>();
   
     let email = '';
     let password = '';
@@ -33,7 +39,7 @@
       <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
       <div class="navbar-menu">
         <button type="button" class="navbar-link">Vetítések</button>
-        <button type="button" class="navbar-link">Filmek</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goFilms')}>Filmek</button>
         <button type="button" class="navbar-link active" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
       </div>

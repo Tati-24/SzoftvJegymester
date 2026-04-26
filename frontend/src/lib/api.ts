@@ -18,6 +18,10 @@ export function setToken(t: string | null) {
 
 }
 
+export function isAuthenticated(): boolean {
+  return !!token;
+}
+
 
 
 async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
@@ -124,4 +128,24 @@ export async function getTestNames(): Promise<string[]> {
 
   return req<string[]>('/');
 
+}
+
+export type Film = {
+  id: string;
+  title: string;
+  description: string;
+  length: number;
+  ageRating: string;
+  releaseDate: string;
+  genre: string;
+  director: string;
+  isActive: boolean;
+};
+
+export async function getFilms(): Promise<Film[]> {
+  return req<Film[]>('/films');
+}
+
+export async function getFilm(id: string): Promise<Film> {
+  return req<Film>(`/films/${id}`);
 }
