@@ -108,10 +108,14 @@ namespace AspNetServer.Controllers
                     _db.Remove(ticket);
                     await _db.SaveChangesAsync();
                 }
-                
+
             }
-                
-            return Ok("Ticket deleted.");
+            else
+            {
+                return Unauthorized("User does not own that ticket.");
+            }
+
+                return Ok("Ticket deleted.");
         }
 
         /// <summary>
@@ -169,6 +173,8 @@ namespace AspNetServer.Controllers
                .Include(t => t.Screening)
                    .ThenInclude(s => s.Film)
                .FirstAsync();
+            if (ticket == null)
+                return NotFound("Invalid ticket id");
             ticket.IsValidated = true;
             ticket.ValidatedAt = DateTime.UtcNow;
 
@@ -191,7 +197,9 @@ namespace AspNetServer.Controllers
                .Where(t => t.UserId == userId)
                .Include(t => t.Screening)
                    .ThenInclude(s => s.Film)
-               .FirstAsync();            
+               .FirstAsync();
+            if (ticket == null)
+                return NotFound("Invalid ticket id");
             return Ok(ticket);
         }
         /// <summary>
