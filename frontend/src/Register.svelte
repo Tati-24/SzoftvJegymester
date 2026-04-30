@@ -3,7 +3,7 @@
     import { register } from './lib/api';
     import './Register.css';
 
-    const dispatch = createEventDispatcher<{ goLogin: void; goHome: void; goRegister: void }>();
+    const dispatch = createEventDispatcher<{ loggedIn: void; goLogin: void; goHome: void; goRegister: void; goFilms: void }>();
 
     let name = '';
     let email = '';
@@ -53,6 +53,7 @@
         });
 
         success = true;
+        dispatch('loggedIn');
   
         // űrlap ürítése
         name = '';
