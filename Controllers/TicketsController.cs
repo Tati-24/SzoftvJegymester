@@ -27,7 +27,6 @@ namespace AspNetServer.Controllers
         {
             if (!await _db.Screenings.AnyAsync(s => s.Id == dto.ScreeningId && !s.IsCancelled))
                 return NotFound("Screening not found.");
-
             if (await _db.Tickets.AnyAsync(t=>t.ScreeningId == dto.ScreeningId && t.SeatNumber == dto.SeatNumber))
                 return Conflict("Ticket already purchased.");
 
@@ -35,7 +34,7 @@ namespace AspNetServer.Controllers
             {
                 ScreeningId = dto.ScreeningId,
                 SeatNumber = dto.SeatNumber,
-                TicketPrice = dto.TicketPrice
+                TicketPrice = dto.TicketPrice,
             };
             if (User.Identity?.IsAuthenticated == true)
             {                
@@ -51,7 +50,6 @@ namespace AspNetServer.Controllers
                 {
                     return BadRequest("For not registered users giving name, phone number and email is mandatory.");
                 }
-
                 ticket.Guest = new Guest
                 {
                     Email = dto.GuestEmail,
@@ -134,7 +132,6 @@ namespace AspNetServer.Controllers
             }
             if (!await _db.Screenings.AnyAsync(s => s.Id == dto.ScreeningId && !s.IsCancelled))
                 return NotFound("Screening not found.");
-
             if (await _db.Tickets.AnyAsync(t => t.ScreeningId == dto.ScreeningId && t.SeatNumber == dto.SeatNumber))
                 return Conflict("Ticket already purchased.");
 

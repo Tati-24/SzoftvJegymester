@@ -11,6 +11,15 @@
     goFilms: void;
     goFilmEdit: void;
   }>();
+  export let isLoggedIn = false;
+
+  const dispatch = createEventDispatcher<{
+    goLogin: void;
+    goRegister: void;
+    goHome: void;
+    goFilms: void;
+    goFilmEdit: void;
+  }>();
   </script>
 
   <div class="home-page">

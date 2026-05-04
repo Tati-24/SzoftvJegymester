@@ -28,7 +28,6 @@ namespace AspNetServer.Controllers
 
             if (!await _db.MovieHalls.AnyAsync(h => h.Id == dto.MovieHallId))
                 return NotFound("Movie hall not found.");
-
             if (await _db.Screenings.AnyAsync(s => s.FilmId == dto.FilmId && s.MovieHallId == dto.MovieHallId && s.StartTime == dto.StartTime))
                 return Conflict("Screening already exists with these parameters.");
 
