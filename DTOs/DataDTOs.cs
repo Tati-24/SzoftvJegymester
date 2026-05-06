@@ -53,6 +53,17 @@ public record TicketPurchaseRequest(
     [EmailAddress] string? GuestEmail,
     [Phone] string? GuestPhone);
 
+public record TicketPurchaseResponse(
+    Guid? ScreeningId,
+    [Range(1, int.MaxValue)] int SeatNumber,
+    [Range(0, double.MaxValue)] decimal TicketPrice,
+    decimal Price,
+    DateTime purchasedAt,
+    Guid? UserId,
+    string? GuestName,
+    [EmailAddress] string? GuestEmail,
+    [Phone] string? GuestPhone);
+
 public record ContactUpdateRequest(
     [Phone] string? PhoneNumber,
     [EmailAddress] string? Email);
