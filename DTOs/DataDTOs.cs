@@ -46,17 +46,14 @@ public record ScreeningUpdateRequest(
 
 public record TicketPurchaseRequest(
     [Required] Guid ScreeningId,
-    [Range(1, int.MaxValue)] int SeatNumber,
-    [Range(0, double.MaxValue)] decimal TicketPrice,
+    [Range(1, int.MaxValue)] int SeatNumber,    
     Guid? UserId,
     string? GuestName,
     [EmailAddress] string? GuestEmail,
     [Phone] string? GuestPhone);
-
 public record TicketPurchaseResponse(
     Guid? ScreeningId,
     [Range(1, int.MaxValue)] int SeatNumber,
-    [Range(0, double.MaxValue)] decimal TicketPrice,
     decimal Price,
     DateTime purchasedAt,
     Guid? UserId,
