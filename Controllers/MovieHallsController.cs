@@ -88,7 +88,7 @@ public class MovieHallsController : ControllerBase
 
         _db.MovieHalls.Remove(hall);
         await _db.SaveChangesAsync();
-        return Ok($"Movie hall '{hall.Id}' removed.");
+        return Ok($"Movie hall '{hall.HallName}' removed.");
     }
 
     /// <summary>List movie halls so clients can use their ids.</summary>

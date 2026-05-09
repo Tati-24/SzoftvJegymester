@@ -24,63 +24,7 @@ namespace AspNetServer.Controllers
         [HttpPost("purchase")]
         public async Task<IActionResult> PurchaseTicket([FromBody] TicketPurchaseRequest dto)
         {
-
-            var screening = await _db.Screenings
-                .FirstOrDefaultAsync(s => s.Id == dto.ScreeningId);
-
-
-            if (screening == null)
-                return NotFound("Screening not found.");
-
-
-            if (screening.IsCancelled)
-                return BadRequest("This screening has been cancelled.");
-            
-            if (await _db.Tickets.AnyAsync(t=>t.ScreeningId == dto.ScreeningId && t.SeatNumber == dto.SeatNumber))
-                return Conflict("Ticket already purchased.");
-
-            var ticket = new Tickets
-            {
-                ScreeningId = dto.ScreeningId,
-                SeatNumber = dto.SeatNumber,
-                TicketPrice = screening.BasePrice
-            };
-            
-            if (dto.UserId != null)
-            {
-                    ticket.UserId = dto.UserId;
-                    ticket.User = await _db.Users.FirstOrDefaultAsync(u=>u.Id == dto.UserId);                
-            }
-            else
-            {                
-                if (string.IsNullOrEmpty(dto.GuestName) || string.IsNullOrEmpty(dto.GuestEmail) || string.IsNullOrEmpty(dto.GuestPhone))
-                {
-                    return BadRequest("For not registered users giving name, phone number and email is mandatory.");
-                }
-                
-                Guest guest = new Guest
-                {
-                    Email = dto.GuestEmail,
-                    Name = dto.GuestName,
-                    PhoneNumber = dto.GuestPhone
-                };  
-                ticket.Guest = guest;
-                guest.Tickets.Add(ticket);
-            }
-            
-            _db.Tickets.Add(ticket);
-            await _db.SaveChangesAsync();
-            var response = new TicketPurchaseResponse(
-                 ticket.ScreeningId,
-                 ticket.SeatNumber,
-                 screening.BasePrice,
-                 DateTime.Now,
-                 ticket.UserId,
-                 dto.GuestName,
-                 dto.GuestEmail,
-                 dto.GuestPhone
-             );
-            return Ok(response);
+            return await PurchaseTicketInternal(dto, "Screening not found.");
         }
 
 
@@ -145,62 +89,7 @@ namespace AspNetServer.Controllers
         [HttpPost("cashier/purchase")]
         public async Task<IActionResult> CashierPurchaseTickets( [FromBody] TicketPurchaseRequest dto)
         {
-          var screening = await _db.Screenings
-                .FirstOrDefaultAsync(s => s.Id == dto.ScreeningId);
-
-
-            if (screening == null)
-                return NotFound("The requested screening does not exist.");
-
-
-            if (screening.IsCancelled)
-                return BadRequest("This screening has been cancelled.");
-            
-            if (await _db.Tickets.AnyAsync(t=>t.ScreeningId == dto.ScreeningId && t.SeatNumber == dto.SeatNumber))
-                return Conflict("Ticket already purchased.");
-
-            var ticket = new Tickets
-            {
-                ScreeningId = dto.ScreeningId,
-                SeatNumber = dto.SeatNumber,
-                TicketPrice = screening.BasePrice
-            };
-            
-            if (dto.UserId != null)
-            {                
-                ticket.UserId = dto.UserId;
-                ticket.User = await _db.Users.FirstOrDefaultAsync(u=>u.Id == dto.UserId);
-            }
-            else
-            {                
-                if (string.IsNullOrEmpty(dto.GuestName) || string.IsNullOrEmpty(dto.GuestEmail) || string.IsNullOrEmpty(dto.GuestPhone))
-                {
-                    return BadRequest("For not registered users giving name, phone number and email is mandatory.");
-                }
-                    
-                Guest guest = new Guest
-                {
-                    Email = dto.GuestEmail,
-                    Name = dto.GuestName,
-                    PhoneNumber = dto.GuestPhone
-                };
-                ticket.Guest = guest;
-                guest.Tickets.Add(ticket);
-            }
-            
-            _db.Tickets.Add(ticket);
-            await _db.SaveChangesAsync();
-            var response = new TicketPurchaseResponse(
-                 ticket.ScreeningId,
-                 ticket.SeatNumber,
-                 screening.BasePrice,
-                 DateTime.Now,
-                 ticket.UserId,
-                 dto.GuestName,
-                 dto.GuestEmail,
-                 dto.GuestPhone
-             );
-            return Ok(response);
+            return await PurchaseTicketInternal(dto, "The requested screening does not exist.");
         }
           
                                         
@@ -314,7 +203,85 @@ namespace AspNetServer.Controllers
                 TopMovies = topMovies,
                 GeneratedAt = DateTime.UtcNow
             });
-        }    
+        }
+
+        private async Task<IActionResult> PurchaseTicketInternal(TicketPurchaseRequest dto, string screeningNotFoundMessage)
+        {
+            var screening = await _db.Screenings
+                .Include(s => s.MovieHall)
+                .FirstOrDefaultAsync(s => s.Id == dto.ScreeningId);
+
+            if (screening == null)
+                return NotFound(screeningNotFoundMessage);
+
+            if (screening.IsCancelled)
+                return BadRequest("This screening has been cancelled.");
+
+            var soldTickets = await _db.Tickets
+                .CountAsync(t => t.ScreeningId == dto.ScreeningId && !t.IsCancelled);
+
+            if (soldTickets >= screening.MovieHall.SeatCount)
+                return Conflict("No more tickets can be purchased because the movie hall is full.");
+
+            if (await _db.Tickets.AnyAsync(t => t.ScreeningId == dto.ScreeningId && t.SeatNumber == dto.SeatNumber && !t.IsCancelled))
+                return Conflict("Ticket already purchased.");
+
+            var ticket = new Tickets
+            {
+                ScreeningId = dto.ScreeningId,
+                SeatNumber = dto.SeatNumber,
+                TicketPrice = screening.BasePrice
+            };
+
+            switch (dto.BuyerType)
+            {
+                case TicketBuyerType.RegisteredUser:
+                    if (dto.UserId == null)
+                        return BadRequest("UserId is required for registered user purchases.");
+
+                    var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == dto.UserId);
+                    if (user == null)
+                        return NotFound("User not found.");
+
+                    ticket.UserId = user.Id;
+                    ticket.User = user;
+                    break;
+
+                case TicketBuyerType.Guest:
+                    if (string.IsNullOrWhiteSpace(dto.GuestName) || string.IsNullOrWhiteSpace(dto.GuestEmail) || string.IsNullOrWhiteSpace(dto.GuestPhone))
+                    {
+                        return BadRequest("For guest purchases name, phone number and email are mandatory.");
+                    }
+
+                    var guest = new Guest
+                    {
+                        Email = dto.GuestEmail,
+                        Name = dto.GuestName,
+                        PhoneNumber = dto.GuestPhone
+                    };
+                    ticket.Guest = guest;
+                    guest.Tickets.Add(ticket);
+                    break;
+
+                default:
+                    return BadRequest("Invalid buyer type.");
+            }
+
+            _db.Tickets.Add(ticket);
+            await _db.SaveChangesAsync();
+
+            var response = new TicketPurchaseResponse(
+                 ticket.ScreeningId,
+                 ticket.SeatNumber,
+                 screening.BasePrice,
+                 DateTime.UtcNow,
+                 ticket.UserId,
+                 dto.BuyerType == TicketBuyerType.Guest ? dto.GuestName : null,
+                 dto.BuyerType == TicketBuyerType.Guest ? dto.GuestEmail : null,
+                 dto.BuyerType == TicketBuyerType.Guest ? dto.GuestPhone : null
+             );
+            return Ok(response);
+        }
 }
 
 

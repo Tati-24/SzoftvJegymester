@@ -44,9 +44,33 @@ public record ScreeningUpdateRequest(
     decimal? BasePrice,
     bool? IsCancelled);
 
+public record ScreeningResponse(
+    Guid Id,
+    Guid FilmId,
+    string FilmTitle,
+    Guid MovieHallId,
+    string MovieHallName,
+    DateTime StartTime,
+    decimal BasePrice,
+    bool IsCancelled);
+
+public record ScreeningDeleteResponse(
+    string Message,
+    Guid FilmId,
+    string FilmTitle,
+    Guid MovieHallId,
+    string MovieHallName);
+
+public enum TicketBuyerType
+{
+    RegisteredUser,
+    Guest
+}
+
 public record TicketPurchaseRequest(
     [Required] Guid ScreeningId,
-    [Range(1, int.MaxValue)] int SeatNumber,    
+    [Range(1, int.MaxValue)] int SeatNumber,
+    [Required] TicketBuyerType BuyerType,
     Guid? UserId,
     string? GuestName,
     [EmailAddress] string? GuestEmail,
