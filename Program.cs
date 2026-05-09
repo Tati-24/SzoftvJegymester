@@ -65,12 +65,12 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Paste the JWT token from the login response."
+        Description = "Paste only the JWT token. Do not include the word Bearer."
     });
-    options.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
         {
-            new OpenApiSecuritySchemeReference("Bearer", null, null),
+            new OpenApiSecuritySchemeReference("Bearer", document, null),
             new List<string>()
         }
     });
@@ -91,7 +91,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.ConfigObject.PersistAuthorization = true;
+    });
 }
 
 if (app.Environment.IsDevelopment())
