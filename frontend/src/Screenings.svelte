@@ -186,8 +186,12 @@
       purchaseError = 'A darabszámnak 1 és 99 közötti egész számnak kell lennie.';
       return;
     }
-    if (!isLoggedIn && (!guestEmail.trim() || !guestPhone.trim())) {
-      purchaseError = 'Vendég vásárlásnál az e-mail és telefonszám megadása kötelező.';
+    if (
+      !isLoggedIn &&
+      (!guestEmail.trim() || !guestPhone.trim() || !guestName.trim())
+    ) {
+      purchaseError =
+        'Vendég vásárlásnál a név, az e-mail és a telefonszám megadása kötelező.';
       return;
     }
 

@@ -1,7 +1,13 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { get } from 'svelte/store';
-  import { getScreening, isAuthenticated, purchaseTicket } from './lib/api';
+  import {
+    getScreening,
+    getUserId,
+    isAuthenticated,
+    purchaseTicket,
+    TicketBuyerType
+  } from './lib/api';
   import { cartStore } from './lib/cart';
   import { getMovieHallDisplayName } from './lib/movieHallNames';
   import './styles/Cart.css';
@@ -108,19 +114,34 @@
       let purchasedCount = 0;
 
       for (const item of itemsSnapshot) {
-        if (!currentlyLoggedIn && (!item.guestEmail || !item.guestPhone)) {
-          throw new Error('Vendég vásárlásnál minden kosártételhez kötelező az e-mail és a telefonszám.');
+        if (
+          !currentlyLoggedIn &&
+          (!item.guestEmail?.trim() ||
+            !item.guestPhone?.trim() ||
+            !String(item.guestName ?? '').trim())
+        ) {
+          throw new Error(
+            'Vendég vásárlásnál minden kosártételhez kötelező a név, az e-mail és a telefonszám.'
+          );
         }
 
-        const latestScreening = await getScreening(item.screeningId);
+        await getScreening(item.screeningId);
+
+        const userId = getUserId();
+        if (currentlyLoggedIn && !userId) {
+          throw new Error('Nem sikerült felismerni a felhasználót. Jelentkezz be újra.');
+        }
 
         await purchaseTicket({
           screeningId: item.screeningId,
           seatNumber: item.seatNumber,
-          ticketPrice: latestScreening.basePrice,
-          guestName: currentlyLoggedIn ? null : item.guestName ?? null,
-          guestEmail: currentlyLoggedIn ? null : item.guestEmail ?? null,
-          guestPhone: currentlyLoggedIn ? null : item.guestPhone ?? null
+          buyerType: currentlyLoggedIn
+            ? TicketBuyerType.RegisteredUser
+            : TicketBuyerType.Guest,
+          userId: currentlyLoggedIn ? userId : null,
+          guestName: currentlyLoggedIn ? null : String(item.guestName ?? '').trim(),
+          guestEmail: currentlyLoggedIn ? null : item.guestEmail!.trim(),
+          guestPhone: currentlyLoggedIn ? null : item.guestPhone!.trim()
         });
         purchasedCount += 1;
         cartStore.remove(item.id);

@@ -87,6 +87,8 @@ function humanizeApiError(body: string): string {
   const map: Record<string, string> = {
     'For not registered users giving phone number and email is mandatory.':
       'A szerver nem fogadja el a belépésed (néha ez lejárt token). Jelentkezz be újra — vagy töltsd ki az adatokat vendéghez a vetítésnél kosár előtt.',
+    'For guest purchases name, phone number and email are mandatory.':
+      'Vendég vásárlásnál kötelező a név, az e-mail és a telefonszám minden jegynél.',
     'Ticket already purchased.': 'Erről a vetítésről erre a székre már van eladott jegy.',
     'Invalid User identification.': 'Érvénytelen felhasználó-azonosítás. Jelentkezz be újra.',
     'User does not own that ticket.': 'Ez a jegy nem a fiókodhoz tartozik.',
@@ -302,7 +304,9 @@ export async function deleteFilm(id: string): Promise<void> {
 export type Screening = {
   id: string;
   filmId: string;
+  filmTitle?: string;
   movieHallId: string;
+  movieHallName?: string;
   startTime: string;
   basePrice: number;
   isCancelled: boolean;
@@ -316,10 +320,16 @@ export async function getScreening(id: string): Promise<Screening> {
   return req<Screening>(`/screenings/${id}`);
 }
 
+export const TicketBuyerType = {
+  RegisteredUser: 0,
+  Guest: 1
+} as const;
+
 export type PurchaseTicketInput = {
   screeningId: string;
   seatNumber: number;
-  ticketPrice: number;
+  buyerType: (typeof TicketBuyerType)[keyof typeof TicketBuyerType];
+  userId?: string | null;
   guestName?: string | null;
   guestEmail?: string | null;
   guestPhone?: string | null;
@@ -327,16 +337,21 @@ export type PurchaseTicketInput = {
 
 export async function purchaseTicket(data: PurchaseTicketInput) {
   return req<{
-    id: string;
-    screeningId: string;
+    screeningId?: string | null;
     seatNumber: number;
-    ticketPrice: number;
+    price: number;
+    purchasedAt: string;
+    userId?: string | null;
+    guestName?: string | null;
+    guestEmail?: string | null;
+    guestPhone?: string | null;
   }>('/tickets/purchase', {
     method: 'POST',
     body: JSON.stringify({
       screeningId: data.screeningId,
       seatNumber: data.seatNumber,
-      ticketPrice: data.ticketPrice,
+      buyerType: data.buyerType,
+      userId: data.userId ?? null,
       guestName: data.guestName ?? null,
       guestEmail: data.guestEmail ?? null,
       guestPhone: data.guestPhone ?? null
