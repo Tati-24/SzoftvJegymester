@@ -3,7 +3,15 @@
     import { register } from './lib/api';
     import './Register.css';
 
-    const dispatch = createEventDispatcher<{ loggedIn: void; goLogin: void; goHome: void; goRegister: void; goFilms: void }>();
+    const dispatch = createEventDispatcher<{
+      loggedIn: void;
+      goLogin: void;
+      goHome: void;
+      goRegister: void;
+      goProfile: void;
+      goCart: void;
+    }>();
+    export let isLoggedIn = false;
 
     let name = '';
     let email = '';
@@ -14,8 +22,7 @@
     let loading = false;
     let error: string | null = null;
     let success = false;
-  
-    // Csak telefonszám formátum: számok, +, szóköz, kötőjel, zárójelek (opcionális mező)
+
     const PHONE_REGEX = /^[+]?[0-9\s\-()]{6,25}$/;
 
     async function handleSubmit(event: SubmitEvent) {
@@ -23,8 +30,8 @@
       error = null;
       success = false;
 
-      if (!name || !email || !password || !confirmPassword) {
-        error = 'Minden mező kitöltése kötelező (név, e-mail, jelszó, jelszó megerősítése).';
+      if (!name || !email || !password || !confirmPassword || !phoneNumber.trim()) {
+        error = 'Minden mező kitöltése kötelező (név, e-mail, telefonszám, jelszó, jelszó megerősítése).';
         return;
       }
 
@@ -38,7 +45,7 @@
         return;
       }
 
-      if (phoneNumber.trim() !== '' && !PHONE_REGEX.test(phoneNumber.trim())) {
+      if (!PHONE_REGEX.test(phoneNumber.trim())) {
         error = 'A telefonszám csak számokból, +, szóközből, kötőjelből és zárójelekből állhat (pl. +36 20 123 4567).';
         return;
       }
@@ -49,13 +56,11 @@
           name,
           email,
           password,
-          phoneNumber: phoneNumber || null
+          phoneNumber: phoneNumber.trim()
         });
+        dispatch('loggedIn');
 
         success = true;
-        dispatch('loggedIn');
-  
-        // űrlap ürítése
         name = '';
         email = '';
         password = '';
@@ -73,10 +78,13 @@
     <nav class="navbar">
       <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
       <div class="navbar-menu">
-        <button type="button" class="navbar-link">Vetítések</button>
-        <button type="button" class="navbar-link">Filmek</button>
-        <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
-        <button type="button" class="navbar-link active" on:click={() => dispatch('goRegister')}>Regisztráció</button>
+        {#if isLoggedIn}
+          <button type="button" class="navbar-link" on:click={() => dispatch('goProfile')}>Profil</button>
+          <button type="button" class="navbar-link" on:click={() => dispatch('goCart')}>Kosár</button>
+        {:else}
+          <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
+          <button type="button" class="navbar-link active" on:click={() => dispatch('goRegister')}>Regisztráció</button>
+        {/if}
       </div>
     </nav>
     <div class="page register-page">
@@ -113,11 +121,12 @@
       </div>
 
       <div class="field">
-        <label for="phoneNumber">Telefonszám (nem kötelező)</label>
+        <label for="phoneNumber">Telefonszám</label>
         <input
           id="phoneNumber"
           type="tel"
           bind:value={phoneNumber}
+          required
           placeholder="+36 20 123 4567"
         />
         <span class="field-hint">Csak telefonszám formátum (számok, +, szóköz, kötőjel, zárójel).</span>
