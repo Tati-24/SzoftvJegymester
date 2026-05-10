@@ -109,8 +109,6 @@
       on:loggedIn={handleLoggedIn}
       on:goRegister={goToRegister}
       on:goHome={goToHome}
-      on:goFilms={goToFilms}
-      on:goScreenings={goToScreenings}
       on:goProfile={goToProfile}
       on:goCart={goToCart}
     />
@@ -122,8 +120,6 @@
       on:loggedIn={handleLoggedIn}
       on:goLogin={goToLogin}
       on:goHome={goToHome}
-      on:goFilms={goToFilms}
-      on:goScreenings={goToScreenings}
       on:goProfile={goToProfile}
       on:goCart={goToCart}
     />
@@ -147,8 +143,6 @@
     on:goLogin={goToLogin}
     on:goRegister={goToRegister}
     on:goHome={goToHome}
-    on:goFilms={goToFilms}
-    on:goScreenings={goToScreenings}
     on:goProfile={goToProfile}
     on:goCart={goToCart}
   />
@@ -160,9 +154,7 @@
     on:goLogin={goToLogin}
     on:goRegister={goToRegister}
     on:goHome={goToHome}
-    on:goFilms={goToFilms}
     on:goFilmEdit={goToFilmEdit}
-    on:goScreenings={goToScreenings}
     on:goProfile={goToProfile}
     on:goCart={goToCart}
   />
@@ -173,8 +165,6 @@
     on:goLogin={goToLogin}
     on:goRegister={goToRegister}
     on:goHome={goToHome}
-    on:goFilms={goToFilms}
-    on:goScreenings={goToScreenings}
     on:goFilmEdit={goToFilmEdit}
     on:goProfile={goToProfile}
     on:goCart={goToCart}
@@ -187,7 +177,6 @@
     on:goLogin={goToLogin}
     on:goRegister={goToRegister}
     on:goHome={goToHome}
-    on:goFilms={goToFilms}
     on:goFilmEdit={goToFilmEdit}
     on:goScreenings={goToScreenings}
     on:goProfile={goToProfile}
