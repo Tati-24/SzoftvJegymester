@@ -85,6 +85,30 @@ public record TicketPurchaseResponse(
     [EmailAddress] string? GuestEmail,
     [Phone] string? GuestPhone);
 
+public record TicketResponse(
+    Guid TicketId,
+    Guid ScreeningId,
+    Guid FilmId,
+    string FilmTitle,
+    Guid MovieHallId,
+    string MovieHallName,
+    DateTime ScreeningStartTime,
+    int SeatNumber,
+    decimal Price,
+    DateTime PurchasedAt,
+    TicketBuyerType BuyerType,
+    Guid? UserId,
+    string? UserName,
+    string? UserEmail,
+    Guid? GuestId,
+    string? GuestName,
+    string? GuestEmail,
+    string? GuestPhone,
+    bool IsValidated,
+    DateTime? ValidatedAt,
+    bool IsCancelled,
+    DateTime? CancelledAt);
+
 public record ContactUpdateRequest(
     [Phone] string? PhoneNumber,
     [EmailAddress] string? Email);
