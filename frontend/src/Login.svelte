@@ -8,8 +8,10 @@
       goRegister: void;
       goHome: void;
       goLogin: void;
-      goFilms: void;
+      goProfile: void;
+      goCart: void;
     }>();
+    export let isLoggedIn = false;
   
     let email = '';
     let password = '';
@@ -38,10 +40,13 @@
     <nav class="navbar">
       <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
       <div class="navbar-menu">
-        <button type="button" class="navbar-link">Vetítések</button>
-        <button type="button" class="navbar-link" on:click={() => dispatch('goFilms')}>Filmek</button>
-        <button type="button" class="navbar-link active" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
-        <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
+        {#if isLoggedIn}
+          <button type="button" class="navbar-link" on:click={() => dispatch('goProfile')}>Profil</button>
+          <button type="button" class="navbar-link" on:click={() => dispatch('goCart')}>Kosár</button>
+        {:else}
+          <button type="button" class="navbar-link active" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
+          <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
+        {/if}
       </div>
     </nav>
     <div class="page login-page">

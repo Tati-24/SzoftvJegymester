@@ -4,8 +4,17 @@
   import './styles/Films.css';
 
   export let isLoggedIn = false;
+  export let isAdmin = false;
 
-  const dispatch = createEventDispatcher<{ goLogin: void; goRegister: void; goHome: void; goFilmEdit: void }>();
+  const dispatch = createEventDispatcher<{
+    goLogin: void;
+    goRegister: void;
+    goHome: void;
+    goFilmEdit: void;
+    goScreenings: { filmTitle?: string };
+    goProfile: void;
+    goCart: void;
+  }>();
 
   let films: Film[] = [];
   let selectedFilm: Film | null = null;
@@ -17,6 +26,11 @@
     const parsed = new Date(date);
     if (Number.isNaN(parsed.getTime())) return date;
     return parsed.toLocaleDateString('hu-HU');
+  }
+
+  function formatDuration(minutes: number): string {
+    if (!Number.isFinite(minutes) || minutes <= 0) return '-';
+    return `${minutes} perc`;
   }
 
   async function loadFilms() {
@@ -60,19 +74,22 @@
   <nav class="navbar">
     <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
     <div class="navbar-menu">
-      <button type="button" class="navbar-link">Vetítések</button>
-      <button type="button" class="navbar-link active">Filmek</button>
-      {#if isLoggedIn}
-        <button type="button" class="navbar-link" on:click={() => dispatch('goFilmEdit')}>Filmek módosítása</button>
+      {#if isAdmin}
+        <button type="button" class="navbar-link" on:click={() => dispatch('goFilmEdit')}>Admin felület</button>
       {/if}
-      <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
-      <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
+      {#if isLoggedIn}
+        <button type="button" class="navbar-link" on:click={() => dispatch('goProfile')}>Profil</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goCart')}>Kosár</button>
+      {:else}
+        <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
+      {/if}
     </div>
   </nav>
 
   <main class="films-layout">
     <section class="films-list card">
-      <h2>Elérhető filmek</h2>
+      <h2>Most műsoron</h2>
       {#if isLoading}
         <p class="muted">Filmek betöltése...</p>
       {:else if films.length === 0}
@@ -87,7 +104,10 @@
                 on:click={() => loadFilmDetails(film.id)}
               >
                 <span class="title">{film.title}</span>
-                <span class="meta">{film.genre}</span>
+                <span class="meta-row">
+                  <span class="meta-chip">{film.genre || 'Ismeretlen műfaj'}</span>
+                  <span class="meta-chip">{formatDuration(film.length)}</span>
+                </span>
               </button>
             </li>
           {/each}
@@ -96,19 +116,24 @@
     </section>
 
     <section class="film-details card">
-      <h2>Film adatai</h2>
+      <h2>Film részletei</h2>
       {#if isDetailLoading}
         <p class="muted">Részletek betöltése...</p>
       {:else if selectedFilm}
         <h3>{selectedFilm.title}</h3>
+        <div class="film-badges">
+          <span>{selectedFilm.genre || 'Ismeretlen műfaj'}</span>
+          <span>{selectedFilm.ageRating || 'N/A'}</span>
+          <span>{formatDuration(selectedFilm.length)}</span>
+        </div>
         <p class="description">{selectedFilm.description}</p>
         <div class="details-grid">
-          <p><strong>Műfaj:</strong> {selectedFilm.genre}</p>
           <p><strong>Rendező:</strong> {selectedFilm.director}</p>
-          <p><strong>Korhatár:</strong> {selectedFilm.ageRating}</p>
-          <p><strong>Játékidő:</strong> {selectedFilm.length} perc</p>
           <p><strong>Megjelenés:</strong> {formatReleaseDate(selectedFilm.releaseDate)}</p>
         </div>
+        <button type="button" class="showtimes-btn" on:click={() => selectedFilm && dispatch('goScreenings', { filmTitle: selectedFilm.title })}>
+          Vetítések megtekintése
+        </button>
       {:else}
         <p class="muted">Válassz ki egy filmet a listából.</p>
       {/if}

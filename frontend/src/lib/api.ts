@@ -19,7 +19,82 @@ export function setToken(t: string | null) {
 }
 
 export function isAuthenticated(): boolean {
-  return !!token;
+  if (!token) return false;
+  const payload = getJwtPayload();
+  if (!payload) return false;
+  const exp = payload.exp;
+  if (typeof exp === 'number' && Number.isFinite(exp)) {
+    return Date.now() / 1000 < exp - 15;
+  }
+  return true;
+}
+
+function getJwtPayload(): Record<string, unknown> | null {
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length < 2) return null;
+
+  try {
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(base64);
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+export function getUserRole(): string | null {
+  const payload = getJwtPayload();
+  if (!payload) return null;
+
+  const role =
+    payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ??
+    payload.role ??
+    payload.Role;
+
+  return typeof role === 'string' ? role : null;
+}
+
+export function isAdmin(): boolean {
+  return getUserRole() === 'ADMIN';
+}
+
+export function getUserEmail(): string | null {
+  const payload = getJwtPayload();
+  if (!payload) return null;
+
+  const email =
+    payload.email ??
+    payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
+
+  return typeof email === 'string' ? email : null;
+}
+
+export function getUserId(): string | null {
+  const payload = getJwtPayload();
+  if (!payload) return null;
+
+  const id = payload.sub;
+  return typeof id === 'string' ? id : null;
+}
+
+
+
+function humanizeApiError(body: string): string {
+
+  const t = body.trim().replace(/^["']+|["']+$/g, '');
+
+  const map: Record<string, string> = {
+    'For not registered users giving phone number and email is mandatory.':
+      'A szerver nem fogadja el a belépésed (néha ez lejárt token). Jelentkezz be újra — vagy töltsd ki az adatokat vendéghez a vetítésnél kosár előtt.',
+    'Ticket already purchased.': 'Erről a vetítésről erre a székre már van eladott jegy.',
+    'Invalid User identification.': 'Érvénytelen felhasználó-azonosítás. Jelentkezz be újra.',
+    'User does not own that ticket.': 'Ez a jegy nem a fiókodhoz tartozik.',
+    'Invalid ticket id': 'Érvénytelen jegyazonosító.'
+  };
+
+  return map[t] ?? body;
+
 }
 
 
@@ -56,7 +131,7 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
 
     const msg = await res.text();
 
-    throw new Error(msg || `Hiba: ${res.status}`);
+    throw new Error(humanizeApiError(msg) || `Hiba: ${res.status}`);
 
   }
 
@@ -148,4 +223,163 @@ export async function getFilms(): Promise<Film[]> {
 
 export async function getFilm(id: string): Promise<Film> {
   return req<Film>(`/films/${id}`);
+}
+
+export type FilmCreateInput = {
+  title: string;
+  description: string;
+  length: number;
+  ageRating?: string | null;
+  releaseDate: string;
+  genre?: string | null;
+  director?: string | null;
+  isActive?: boolean;
+};
+
+export async function createFilm(data: FilmCreateInput): Promise<Film> {
+  return req<Film>('/films/admin/upload', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: data.title,
+      description: data.description,
+      length: data.length,
+      ageRating: data.ageRating ?? null,
+      releaseDate: data.releaseDate,
+      genre: data.genre ?? null,
+      director: data.director ?? null,
+      isActive: data.isActive ?? true
+    })
+  });
+}
+
+export type FilmUpdateInput = {
+  title: string;
+  description: string;
+  length: number;
+  ageRating: string | null;
+  releaseDate: string;
+  genre: string | null;
+  director: string | null;
+  isActive: boolean;
+};
+
+export async function updateFilm(id: string, data: FilmUpdateInput): Promise<Film> {
+  return req<Film>(`/films/admin/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      title: data.title,
+      description: data.description,
+      length: data.length,
+      ageRating: data.ageRating,
+      releaseDate: data.releaseDate,
+      genre: data.genre,
+      director: data.director,
+      isActive: data.isActive
+    })
+  });
+}
+
+export async function deleteFilm(id: string): Promise<void> {
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/films/admin/${id}`, {
+      method: 'DELETE',
+      headers
+    });
+  } catch {
+    throw new Error('A szerver nem elérhető.');
+  }
+
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(humanizeApiError(msg) || `Hiba: ${res.status}`);
+  }
+}
+
+export type Screening = {
+  id: string;
+  filmId: string;
+  movieHallId: string;
+  startTime: string;
+  basePrice: number;
+  isCancelled: boolean;
+};
+
+export async function getScreenings(): Promise<Screening[]> {
+  return req<Screening[]>('/screenings');
+}
+
+export async function getScreening(id: string): Promise<Screening> {
+  return req<Screening>(`/screenings/${id}`);
+}
+
+export type PurchaseTicketInput = {
+  screeningId: string;
+  seatNumber: number;
+  ticketPrice: number;
+  guestName?: string | null;
+  guestEmail?: string | null;
+  guestPhone?: string | null;
+};
+
+export async function purchaseTicket(data: PurchaseTicketInput) {
+  return req<{
+    id: string;
+    screeningId: string;
+    seatNumber: number;
+    ticketPrice: number;
+  }>('/tickets/purchase', {
+    method: 'POST',
+    body: JSON.stringify({
+      screeningId: data.screeningId,
+      seatNumber: data.seatNumber,
+      ticketPrice: data.ticketPrice,
+      guestName: data.guestName ?? null,
+      guestEmail: data.guestEmail ?? null,
+      guestPhone: data.guestPhone ?? null
+    })
+  });
+}
+
+export type MyTicket = {
+  id: string;
+  seatNumber: number;
+  ticketPrice: number;
+  purchasedAt: string;
+  isCancelled?: boolean;
+  isValidated?: boolean;
+  validatedAt?: string | null;
+  screening?: {
+    startTime: string;
+    film?: {
+      title: string;
+    };
+  };
+};
+
+export async function getMyTickets(): Promise<MyTicket[]> {
+  return req<MyTicket[]>('/tickets/my-tickets');
+}
+
+export async function cancelMyTicket(ticketId: string): Promise<void> {
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/tickets/${ticketId}`, {
+      method: 'DELETE',
+      headers
+    });
+  } catch {
+    throw new Error('A szerver nem elérhető.');
+  }
+
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(humanizeApiError(msg) || `Hiba: ${res.status}`);
+  }
 }

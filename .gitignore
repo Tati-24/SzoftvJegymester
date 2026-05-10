@@ -10,6 +10,15 @@ Migrations/obj/
 *.sln.docstates
 .vscode/
 .idea/
+.vs/
+
+# Temp / OS clutter
+*.tmp
+*.temp
+*~
+*.bak
+Thumbs.db
+.DS_Store
 
 # Local scripts (not for git)
 scripts/push-db.ps1
