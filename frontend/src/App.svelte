@@ -49,8 +49,9 @@
     page = 'films';
   }
 
-  function goToScreenings(event?: CustomEvent<{ filmTitle?: string }>) {
-    screeningsInitialFilmTitle = event?.detail?.filmTitle ?? null;
+  function goToScreenings(event?: CustomEvent) {
+    const detail = event?.detail as { filmTitle?: string } | undefined;
+    screeningsInitialFilmTitle = detail?.filmTitle ?? null;
     page = 'screenings';
   }
 
@@ -116,7 +117,16 @@
   </div>
 {:else if page === 'register'}
   <div class="center-page">
-    <Register isLoggedIn={loggedIn} on:loggedIn={handleLoggedIn} on:goLogin={goToLogin} on:goHome={goToHome} on:goFilms={goToFilms} on:goScreenings={goToScreenings} on:goProfile={goToProfile} on:goCart={goToCart} />
+    <Register
+      isLoggedIn={loggedIn}
+      on:loggedIn={handleLoggedIn}
+      on:goLogin={goToLogin}
+      on:goHome={goToHome}
+      on:goFilms={goToFilms}
+      on:goScreenings={goToScreenings}
+      on:goProfile={goToProfile}
+      on:goCart={goToCart}
+    />
   </div>
 {:else if page === 'films'}
   <Films
@@ -131,7 +141,17 @@
     on:goCart={goToCart}
   />
 {:else if page === 'filmEdit'}
-  <FilmEdit isLoggedIn={loggedIn} isAdmin={admin} on:goLogin={goToLogin} on:goRegister={goToRegister} on:goHome={goToHome} on:goFilms={goToFilms} on:goScreenings={goToScreenings} on:goProfile={goToProfile} on:goCart={goToCart} />
+  <FilmEdit
+    isLoggedIn={loggedIn}
+    isAdmin={admin}
+    on:goLogin={goToLogin}
+    on:goRegister={goToRegister}
+    on:goHome={goToHome}
+    on:goFilms={goToFilms}
+    on:goScreenings={goToScreenings}
+    on:goProfile={goToProfile}
+    on:goCart={goToCart}
+  />
 {:else if page === 'screenings'}
   <Screenings
     initialFilmTitle={screeningsInitialFilmTitle}
@@ -153,6 +173,8 @@
     on:goLogin={goToLogin}
     on:goRegister={goToRegister}
     on:goHome={goToHome}
+    on:goFilms={goToFilms}
+    on:goScreenings={goToScreenings}
     on:goFilmEdit={goToFilmEdit}
     on:goProfile={goToProfile}
     on:goCart={goToCart}

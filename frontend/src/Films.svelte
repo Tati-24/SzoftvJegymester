@@ -74,6 +74,8 @@
   <nav class="navbar">
     <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
     <div class="navbar-menu">
+      <button type="button" class="navbar-link active" aria-current="page">Filmek</button>
+      <button type="button" class="navbar-link" on:click={() => dispatch('goScreenings', {})}>Vetítések</button>
       {#if isAdmin}
         <button type="button" class="navbar-link" on:click={() => dispatch('goFilmEdit')}>Admin felület</button>
       {/if}

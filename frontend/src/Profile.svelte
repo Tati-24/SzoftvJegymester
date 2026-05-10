@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
   import { cancelMyTicket, getMyTickets, getUserEmail, getUserRole, type MyTicket } from './lib/api';
   import './styles/Profile.css';
 
@@ -10,6 +10,8 @@
     goLogin: void;
     goRegister: void;
     goHome: void;
+    goFilms: void;
+    goScreenings: void;
     goFilmEdit: void;
     goProfile: void;
     goCart: void;
@@ -77,6 +79,16 @@
     }
   }
 
+  $: if (isLoggedIn) {
+    email = getUserEmail();
+    role = getUserRole();
+    void loadMyTickets();
+  } else {
+    tickets = [];
+    loading = false;
+    error = '';
+  }
+
   async function handleTicketCancel(ticketId: string) {
     error = '';
     info = '';
@@ -93,15 +105,14 @@
     }
   }
 
-  onMount(() => {
-    loadMyTickets();
-  });
 </script>
 
 <div class="profile-page">
   <nav class="navbar">
     <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
     <div class="navbar-menu">
+      <button type="button" class="navbar-link" on:click={() => dispatch('goFilms')}>Filmek</button>
+      <button type="button" class="navbar-link" on:click={() => dispatch('goScreenings')}>Vetítések</button>
       {#if isAdmin}
         <button type="button" class="navbar-link" on:click={() => dispatch('goFilmEdit')}>Admin felület</button>
       {/if}

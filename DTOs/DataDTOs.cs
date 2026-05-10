@@ -21,6 +21,16 @@ public record FilmUpdateRequest(
     string? Director,
     bool? IsActive);
 
+public record MovieHallCreateRequest(
+    [Required, MaxLength(100)] string HallName,
+    [Range(1, int.MaxValue)] int SeatCount,
+    bool IsOccupied = false);
+
+public record MovieHallUpdateRequest(
+    [MaxLength(100)] string? HallName,
+    [Range(1, int.MaxValue)] int? SeatCount,
+    bool? IsOccupied);
+
 public record ScreeningCreateRequest(
     [Required] Guid FilmId,
     [Required] Guid MovieHallId,
@@ -34,10 +44,42 @@ public record ScreeningUpdateRequest(
     decimal? BasePrice,
     bool? IsCancelled);
 
+public record ScreeningResponse(
+    Guid Id,
+    Guid FilmId,
+    string FilmTitle,
+    Guid MovieHallId,
+    string MovieHallName,
+    DateTime StartTime,
+    decimal BasePrice,
+    bool IsCancelled);
+
+public record ScreeningDeleteResponse(
+    string Message,
+    Guid FilmId,
+    string FilmTitle,
+    Guid MovieHallId,
+    string MovieHallName);
+
+public enum TicketBuyerType
+{
+    RegisteredUser,
+    Guest
+}
+
 public record TicketPurchaseRequest(
     [Required] Guid ScreeningId,
     [Range(1, int.MaxValue)] int SeatNumber,
-    decimal? TicketPrice,
+    [Required] TicketBuyerType BuyerType,
+    Guid? UserId,
+    string? GuestName,
+    [EmailAddress] string? GuestEmail,
+    [Phone] string? GuestPhone);
+public record TicketPurchaseResponse(
+    Guid? ScreeningId,
+    [Range(1, int.MaxValue)] int SeatNumber,
+    decimal Price,
+    DateTime purchasedAt,
     Guid? UserId,
     string? GuestName,
     [EmailAddress] string? GuestEmail,
