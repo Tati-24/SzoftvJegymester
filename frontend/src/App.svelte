@@ -8,12 +8,28 @@
   import Screenings from './Screenings.svelte';
   import Profile from './Profile.svelte';
   import Cart from './Cart.svelte';
-  import { isAdmin, isAuthenticated, setToken } from './lib/api';
+  import AdminMovieHalls from './AdminMovieHalls.svelte';
+  import AdminScreenings from './AdminScreenings.svelte';
+  import AdminTickets from './AdminTickets.svelte';
+  import CashierDesk from './CashierDesk.svelte';
+  import { isAdmin, isAuthenticated, isCashier, setToken } from './lib/api';
 
   const SITE_TITLE = 'Jegymester';
   const TITLE_SEP = ' \u2013 ';
 
-  type Page = 'login' | 'home' | 'register' | 'films' | 'filmEdit' | 'screenings' | 'profile' | 'cart';
+  type Page =
+    | 'login'
+    | 'home'
+    | 'register'
+    | 'films'
+    | 'filmEdit'
+    | 'screenings'
+    | 'profile'
+    | 'cart'
+    | 'adminHalls'
+    | 'adminScreenings'
+    | 'adminTickets'
+    | 'cashier';
 
   const CANONICAL_PATH: Record<Page, string> = {
     home: '/',
@@ -24,6 +40,10 @@
     screenings: '/vetitesek',
     profile: '/profil',
     cart: '/kosar',
+    adminHalls: '/admin/mozitermek',
+    adminScreenings: '/admin/vetitesek',
+    adminTickets: '/admin/jegyek',
+    cashier: '/penztar',
   };
 
   const PATH_TO_PAGE: Record<string, Page> = {
@@ -42,6 +62,14 @@
     '/profile': 'profile',
     '/kosar': 'cart',
     '/cart': 'cart',
+    '/admin/mozitermek': 'adminHalls',
+    '/admin/halls': 'adminHalls',
+    '/admin/vetitesek': 'adminScreenings',
+    '/admin/screenings': 'adminScreenings',
+    '/admin/jegyek': 'adminTickets',
+    '/admin/tickets': 'adminTickets',
+    '/penztar': 'cashier',
+    '/cashier': 'cashier',
   };
 
   const SCREENING_PATHS = new Set(['/vetitesek', '/screenings']);
@@ -108,6 +136,14 @@
         return withSite('Profil');
       case 'cart':
         return withSite('Kosár');
+      case 'adminHalls':
+        return withSite('Mozitermek (admin)');
+      case 'adminScreenings':
+        return withSite('Vetítések (admin)');
+      case 'adminTickets':
+        return withSite('Jegyek (admin)');
+      case 'cashier':
+        return withSite('Pénztár');
       default:
         return SITE_TITLE;
     }
@@ -138,11 +174,13 @@
   let page: Page = initialRoute.page;
   let loggedIn = isAuthenticated();
   let admin = isAdmin();
+  let cashier = isCashier();
 
   beforeUpdate(() => {
     if (!loggedIn || isAuthenticated()) return;
     loggedIn = false;
     admin = false;
+    cashier = false;
   });
 
   let screeningsInitialFilmTitle: string | null = initialRoute.film;
@@ -155,6 +193,10 @@
     '/screenings': '/vetitesek',
     '/profile': '/profil',
     '/cart': '/kosar',
+    '/admin/halls': '/admin/mozitermek',
+    '/admin/screenings': '/admin/vetitesek',
+    '/admin/tickets': '/admin/jegyek',
+    '/cashier': '/penztar',
   };
 
   onMount(() => {
@@ -190,6 +232,7 @@
   function handleLoggedIn() {
     loggedIn = true;
     admin = isAdmin();
+    cashier = isCashier();
     screeningsInitialFilmTitle = null;
     page = 'home';
     replaceRoute();
@@ -238,6 +281,54 @@
     pushRoute();
   }
 
+  function goToAdminHalls() {
+    if (!loggedIn || !admin) {
+      screeningsInitialFilmTitle = null;
+      page = 'login';
+      pushRoute();
+      return;
+    }
+    screeningsInitialFilmTitle = null;
+    page = 'adminHalls';
+    pushRoute();
+  }
+
+  function goToAdminScreenings() {
+    if (!loggedIn || !admin) {
+      screeningsInitialFilmTitle = null;
+      page = 'login';
+      pushRoute();
+      return;
+    }
+    screeningsInitialFilmTitle = null;
+    page = 'adminScreenings';
+    pushRoute();
+  }
+
+  function goToAdminTickets() {
+    if (!loggedIn || !admin) {
+      screeningsInitialFilmTitle = null;
+      page = 'login';
+      pushRoute();
+      return;
+    }
+    screeningsInitialFilmTitle = null;
+    page = 'adminTickets';
+    pushRoute();
+  }
+
+  function goToCashier() {
+    if (!loggedIn || (!cashier && !admin)) {
+      screeningsInitialFilmTitle = null;
+      page = 'login';
+      pushRoute();
+      return;
+    }
+    screeningsInitialFilmTitle = null;
+    page = 'cashier';
+    pushRoute();
+  }
+
   function goToProfile() {
     if (!loggedIn) {
       screeningsInitialFilmTitle = null;
@@ -260,6 +351,7 @@
     setToken(null);
     loggedIn = false;
     admin = false;
+    cashier = false;
     screeningsInitialFilmTitle = null;
     page = 'home';
     replaceRoute();
@@ -270,12 +362,17 @@
   <Home
     isLoggedIn={loggedIn}
     isAdmin={admin}
+    isCashier={cashier}
     on:goLogin={goToLogin}
     on:goRegister={goToRegister}
     on:goHome={goToHome}
     on:goFilms={goToFilms}
     on:goScreenings={goToScreenings}
     on:goFilmEdit={goToFilmEdit}
+    on:goAdminHalls={goToAdminHalls}
+    on:goAdminScreenings={goToAdminScreenings}
+    on:goAdminTickets={goToAdminTickets}
+    on:goCashier={goToCashier}
     on:goProfile={goToProfile}
     on:goCart={goToCart}
     on:logout={handleLogout}
@@ -321,9 +418,82 @@
   <FilmEdit
     isLoggedIn={loggedIn}
     isAdmin={admin}
+    isCashier={cashier}
     on:goLogin={goToLogin}
     on:goRegister={goToRegister}
     on:goHome={goToHome}
+    on:goProfile={goToProfile}
+    on:goCart={goToCart}
+    on:goAdminHalls={goToAdminHalls}
+    on:goAdminScreenings={goToAdminScreenings}
+    on:goAdminTickets={goToAdminTickets}
+    on:goCashier={goToCashier}
+    on:logout={handleLogout}
+  />
+{:else if page === 'adminHalls'}
+  <AdminMovieHalls
+    isLoggedIn={loggedIn}
+    isAdmin={admin}
+    isCashier={cashier}
+    on:goLogin={goToLogin}
+    on:goRegister={goToRegister}
+    on:goHome={goToHome}
+    on:goFilmEdit={goToFilmEdit}
+    on:goAdminHalls={goToAdminHalls}
+    on:goAdminScreenings={goToAdminScreenings}
+    on:goAdminTickets={goToAdminTickets}
+    on:goCashier={goToCashier}
+    on:goProfile={goToProfile}
+    on:goCart={goToCart}
+    on:logout={handleLogout}
+  />
+{:else if page === 'adminScreenings'}
+  <AdminScreenings
+    isLoggedIn={loggedIn}
+    isAdmin={admin}
+    isCashier={cashier}
+    on:goLogin={goToLogin}
+    on:goRegister={goToRegister}
+    on:goHome={goToHome}
+    on:goFilmEdit={goToFilmEdit}
+    on:goAdminHalls={goToAdminHalls}
+    on:goAdminScreenings={goToAdminScreenings}
+    on:goAdminTickets={goToAdminTickets}
+    on:goCashier={goToCashier}
+    on:goProfile={goToProfile}
+    on:goCart={goToCart}
+    on:logout={handleLogout}
+  />
+{:else if page === 'adminTickets'}
+  <AdminTickets
+    isLoggedIn={loggedIn}
+    isAdmin={admin}
+    isCashier={cashier}
+    on:goLogin={goToLogin}
+    on:goRegister={goToRegister}
+    on:goHome={goToHome}
+    on:goFilmEdit={goToFilmEdit}
+    on:goAdminHalls={goToAdminHalls}
+    on:goAdminScreenings={goToAdminScreenings}
+    on:goAdminTickets={goToAdminTickets}
+    on:goCashier={goToCashier}
+    on:goProfile={goToProfile}
+    on:goCart={goToCart}
+    on:logout={handleLogout}
+  />
+{:else if page === 'cashier'}
+  <CashierDesk
+    isLoggedIn={loggedIn}
+    isAdmin={admin}
+    isCashier={cashier}
+    on:goLogin={goToLogin}
+    on:goRegister={goToRegister}
+    on:goHome={goToHome}
+    on:goFilmEdit={goToFilmEdit}
+    on:goAdminHalls={goToAdminHalls}
+    on:goAdminScreenings={goToAdminScreenings}
+    on:goAdminTickets={goToAdminTickets}
+    on:goCashier={goToCashier}
     on:goProfile={goToProfile}
     on:goCart={goToCart}
     on:logout={handleLogout}

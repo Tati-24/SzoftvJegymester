@@ -10,9 +10,11 @@
   } from './lib/api';
   import NavbarBackToHome from './NavbarBackToHome.svelte';
   import './styles/FilmEdit.css';
+  import './styles/AdminDesk.css';
 
   export let isLoggedIn = false;
   export let isAdmin = false;
+  export let isCashier = false;
 
   const dispatch = createEventDispatcher<{
     goLogin: void;
@@ -21,6 +23,10 @@
     goProfile: void;
     goCart: void;
     logout: void;
+    goAdminHalls: void;
+    goAdminScreenings: void;
+    goAdminTickets: void;
+    goCashier: void;
   }>();
 
   type FilmForm = {
@@ -214,9 +220,15 @@
       <NavbarBackToHome on:goHome={() => dispatch('goHome')} />
       <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
     </div>
-    <div class="navbar-menu">
+    <div class="navbar-menu admin-nav-row">
       {#if isAdmin}
-        <button type="button" class="navbar-link active">Admin felület</button>
+        <button type="button" class="navbar-link active">Filmek</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goAdminHalls')}>Mozitermek</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goAdminScreenings')}>Vetítések</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goAdminTickets')}>Jegyek</button>
+      {/if}
+      {#if isCashier || isAdmin}
+        <button type="button" class="navbar-link" on:click={() => dispatch('goCashier')}>Pénztár</button>
       {/if}
       {#if isLoggedIn}
         <button type="button" class="navbar-link" on:click={() => dispatch('goProfile')}>Profil</button>
