@@ -46,7 +46,7 @@
   }
 
   function getScreeningStartMs(ticket: MyTicket): number | null {
-    const iso = ticket.screening?.startTime;
+    const iso = ticket.screeningStartTime;
     if (!iso) return null;
     const t = new Date(iso).getTime();
     return Number.isFinite(t) ? t : null;
@@ -159,10 +159,10 @@
         <ul class="ticket-list">
           {#each tickets as ticket}
             <li>
-              <p><strong>Film:</strong> {ticket.screening?.film?.title ?? 'Ismeretlen film'}</p>
-              <p><strong>Időpont:</strong> {formatDateTime(ticket.screening?.startTime)}</p>
+              <p><strong>Film:</strong> {ticket.filmTitle ?? 'Ismeretlen film'}</p>
+              <p><strong>Időpont:</strong> {formatDateTime(ticket.screeningStartTime)}</p>
               <p><strong>Ülés:</strong> {ticket.seatNumber}</p>
-              <p><strong>Ár:</strong> {ticket.ticketPrice} Ft</p>
+              <p><strong>Ár:</strong> {ticket.price} Ft</p>
               <p>
                 <strong>Státusz:</strong>
                 <span class={`ticket-status ${getTicketStatus(ticket).cls}`}>{getTicketStatus(ticket).label}</span>

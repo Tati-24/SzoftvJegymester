@@ -392,17 +392,13 @@ export async function purchaseTicket(data: PurchaseTicketInput) {
 export type MyTicket = {
   id: string;
   seatNumber: number;
-  ticketPrice: number;
+  price: number;
   purchasedAt: string;
   isCancelled?: boolean;
   isValidated?: boolean;
   validatedAt?: string | null;
-  screening?: {
-    startTime: string;
-    film?: {
-      title: string;
-    };
-  };
+    screeningStartTime: string;
+    filmTitle: string;
 };
 
 export async function getMyTickets(): Promise<MyTicket[]> {
