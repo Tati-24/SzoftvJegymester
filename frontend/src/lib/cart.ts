@@ -6,6 +6,8 @@ export type CartItem = {
   filmTitle: string;
   screeningStartTime: string;
   movieHallId?: string;
+  /** Vetítés API-ból (MovieHalls.HallName) */
+  movieHallName?: string | null;
   seatNumber: number;
   ticketPrice: number;
   guestName?: string | null;

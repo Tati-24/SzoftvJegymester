@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
-  import { getFilms, type Film } from './lib/api';
+  import { getFilms, sortFilmsForDisplay, type Film } from './lib/api';
   import './Home.css';
 
   export let isLoggedIn = false;
@@ -15,6 +15,7 @@
     goScreenings: { filmTitle?: string };
     goProfile: void;
     goCart: void;
+    logout: void;
   }>();
 
   const demoFilms: Film[] = [
@@ -69,8 +70,8 @@
     showingDemo = false;
     try {
       const all = await getFilms();
-      const active = all.filter((f) => f.isActive);
-      filmsOnDisplay = active.length > 0 ? active.slice(0, 10) : [];
+      const sorted = sortFilmsForDisplay(all);
+      filmsOnDisplay = sorted.length > 0 ? sorted.slice(0, 10) : [];
       showingDemo = filmsOnDisplay.length === 0;
       if (showingDemo) {
         filmsOnDisplay = demoFilms;
@@ -99,6 +100,9 @@
       {#if isLoggedIn}
         <button type="button" class="navbar-link" on:click={() => dispatch('goProfile')}>Profil</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goCart')}>Kosár</button>
+        <button type="button" class="navbar-link navbar-link-logout" on:click={() => dispatch('logout')}>
+          Kijelentkezés
+        </button>
       {:else}
         <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
@@ -131,8 +135,8 @@
           {/each}
         </div>
       {:else}
-        <div class="home-film-scroller">
-          <div class="home-film-row">
+        <div class="home-film-grid-wrap">
+          <div class="home-film-grid">
             {#each filmsOnDisplay as film (film.id)}
               <article class="home-film-tile">
                 <div class="home-tile-visual">

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { cancelMyTicket, getMyTickets, getUserEmail, getUserRole, type MyTicket } from './lib/api';
+  import { cancelMyTicket, getMyTickets, getUserEmail, getUserName, type MyTicket } from './lib/api';
+  import NavbarBackToHome from './NavbarBackToHome.svelte';
   import './styles/Profile.css';
 
   export let isLoggedIn = false;
@@ -17,7 +18,7 @@
   }>();
 
   let email = getUserEmail();
-  let role = getUserRole();
+  let displayName = getUserName();
 
   let tickets: MyTicket[] = [];
   let loading = true;
@@ -79,7 +80,7 @@
 
   $: if (isLoggedIn) {
     email = getUserEmail();
-    role = getUserRole();
+    displayName = getUserName();
     void loadMyTickets();
   } else {
     tickets = [];
@@ -107,7 +108,10 @@
 
 <div class="profile-page">
   <nav class="navbar">
-    <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+    <div class="navbar-brand-group">
+      <NavbarBackToHome on:goHome={() => dispatch('goHome')} />
+      <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+    </div>
     <div class="navbar-menu">
       {#if isAdmin}
         <button type="button" class="navbar-link" on:click={() => dispatch('goFilmEdit')}>Admin felület</button>
@@ -115,6 +119,9 @@
       {#if isLoggedIn}
         <button type="button" class="navbar-link active" on:click={() => dispatch('goProfile')}>Profil</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goCart')}>Kosár</button>
+        <button type="button" class="navbar-link navbar-link-logout" on:click={() => dispatch('logout')}>
+          Kijelentkezés
+        </button>
       {:else}
         <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
@@ -127,11 +134,10 @@
       <h2>Profil adatok</h2>
       {#if isLoggedIn}
         <p><strong>E-mail:</strong> {email ?? '-'}</p>
-        <p><strong>Szerepkör:</strong> {role ?? '-'}</p>
+        <p><strong>Felhasználónév:</strong> {displayName ?? '-'}</p>
         {#if isAdmin}
           <button type="button" class="primary-btn" on:click={() => dispatch('goFilmEdit')}>Admin felület megnyitása</button>
         {/if}
-        <button type="button" class="primary-btn" on:click={() => dispatch('logout')}>Kijelentkezés</button>
       {:else}
         <p class="muted">A profil megtekintéséhez bejelentkezés szükséges.</p>
         <button type="button" class="primary-btn" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
@@ -148,7 +154,7 @@
         <p class="muted">Még nincs jegyed.</p>
       {:else}
         <p class="ticket-cancel-policy muted">
-          Online csak akkor mondhatod le a jegyet, ha a vetítés kezdetéig legalább <strong>4 óra</strong> van hátra.
+          Ha a vetítés kezdetéig legalább <strong>4 óra</strong> van hátra, le tudod mondani a jegyet. Ha ennél kevesebb idő maradt, a lemondás már nem lehetséges.
         </p>
         <ul class="ticket-list">
           {#each tickets as ticket}
@@ -177,7 +183,7 @@
                 {:else if ticket.isCancelled}
                   Már lemondva
                 {:else if !canCancelByPolicy(ticket)}
-                  Nem lemondható online
+                  Lemondás nem lehetséges
                 {:else}
                   Jegy lemondása
                 {/if}

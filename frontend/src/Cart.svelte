@@ -6,10 +6,11 @@
     getUserId,
     isAuthenticated,
     purchaseTicket,
+    screeningHallLabel,
     TicketBuyerType
   } from './lib/api';
   import { cartStore } from './lib/cart';
-  import { getMovieHallDisplayName } from './lib/movieHallNames';
+  import NavbarBackToHome from './NavbarBackToHome.svelte';
   import './styles/Cart.css';
 
   export let isLoggedIn = false;
@@ -23,6 +24,7 @@
     goScreenings: void;
     goProfile: void;
     goCart: void;
+    logout: void;
   }>();
 
   let checkoutLoading = false;
@@ -162,7 +164,10 @@
 
 <div class="cart-page">
   <nav class="navbar">
-    <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+    <div class="navbar-brand-group">
+      <NavbarBackToHome on:goHome={() => dispatch('goHome')} />
+      <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+    </div>
     <div class="navbar-menu">
       {#if isAdmin}
         <button type="button" class="navbar-link" on:click={() => dispatch('goFilmEdit')}>Admin felület</button>
@@ -170,6 +175,9 @@
       {#if isLoggedIn}
         <button type="button" class="navbar-link" on:click={() => dispatch('goProfile')}>Profil</button>
         <button type="button" class="navbar-link active" on:click={() => dispatch('goCart')}>Kosár</button>
+        <button type="button" class="navbar-link navbar-link-logout" on:click={() => dispatch('logout')}>
+          Kijelentkezés
+        </button>
       {:else}
         <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
@@ -223,8 +231,8 @@
                 <h3 class="cart-item-title">{item.filmTitle}</h3>
                 <div class="cart-item-meta">
                   <span>{formatDateTime(item.screeningStartTime)}</span>
-                  {#if item.movieHallId}
-                    <span>{getMovieHallDisplayName(item.movieHallId)}</span>
+                  {#if item.movieHallName?.trim() || item.movieHallId}
+                    <span>{screeningHallLabel(item)}</span>
                   {/if}
                   <span>{item.seatNumber}. szék</span>
                 </div>

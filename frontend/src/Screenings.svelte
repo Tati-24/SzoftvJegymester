@@ -1,8 +1,8 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
-  import { getFilm, getScreening, getScreenings, type Screening } from './lib/api';
+  import { getFilm, getScreening, getScreenings, screeningHallLabel, type Screening } from './lib/api';
   import { cartStore } from './lib/cart';
-  import { getMovieHallDisplayName } from './lib/movieHallNames';
+  import NavbarBackToHome from './NavbarBackToHome.svelte';
   import './styles/Screenings.css';
 
   export let isLoggedIn = false;
@@ -16,6 +16,7 @@
     goFilmEdit: void;
     goProfile: void;
     goCart: void;
+    logout: void;
   }>();
 
   type ScreeningDetails = Screening & {
@@ -202,6 +203,7 @@
           filmTitle: selectedScreening.filmTitle,
           screeningStartTime: selectedScreening.startTime,
           movieHallId: selectedScreening.movieHallId,
+          movieHallName: selectedScreening.movieHallName?.trim() || null,
           seatNumber: seatNumber + i,
           ticketPrice: selectedScreening.basePrice,
           guestName: isLoggedIn ? null : guestName.trim() || null,
@@ -224,7 +226,10 @@
 
 <div class="screenings-page">
   <nav class="navbar">
-    <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+    <div class="navbar-brand-group">
+      <NavbarBackToHome on:goHome={() => dispatch('goHome')} />
+      <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+    </div>
     <div class="navbar-menu">
       {#if isAdmin}
         <button type="button" class="navbar-link" on:click={() => dispatch('goFilmEdit')}>Admin felület</button>
@@ -232,6 +237,9 @@
       {#if isLoggedIn}
         <button type="button" class="navbar-link" on:click={() => dispatch('goProfile')}>Profil</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goCart')}>Kosár</button>
+        <button type="button" class="navbar-link navbar-link-logout" on:click={() => dispatch('logout')}>
+          Kijelentkezés
+        </button>
       {:else}
         <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
@@ -309,7 +317,7 @@
         </div>
         <div class="details-grid">
           <p><strong>Alapár:</strong> {selectedScreening.basePrice} Ft</p>
-          <p><strong>Terem:</strong> {getMovieHallDisplayName(selectedScreening.movieHallId)}</p>
+          <p><strong>Terem:</strong> {screeningHallLabel(selectedScreening)}</p>
         </div>
         <form class="purchase-form" on:submit|preventDefault={handleAddToCart}>
           <h4>Jegyfoglalás</h4>

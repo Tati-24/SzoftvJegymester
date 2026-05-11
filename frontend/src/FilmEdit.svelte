@@ -4,9 +4,11 @@
     createFilm,
     deleteFilm,
     getFilms,
+    sortFilmsForDisplay,
     updateFilm,
     type Film
   } from './lib/api';
+  import NavbarBackToHome from './NavbarBackToHome.svelte';
   import './styles/FilmEdit.css';
 
   export let isLoggedIn = false;
@@ -18,6 +20,7 @@
     goHome: void;
     goProfile: void;
     goCart: void;
+    logout: void;
   }>();
 
   type FilmForm = {
@@ -79,7 +82,7 @@
     error = '';
 
     try {
-      films = await getFilms();
+      films = sortFilmsForDisplay(await getFilms());
       if (films.length === 0) {
         isNewMode = true;
         form = emptyForm();
@@ -207,7 +210,10 @@
 
 <div class="film-edit-page">
   <nav class="navbar">
-    <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+    <div class="navbar-brand-group">
+      <NavbarBackToHome on:goHome={() => dispatch('goHome')} />
+      <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+    </div>
     <div class="navbar-menu">
       {#if isAdmin}
         <button type="button" class="navbar-link active">Admin felület</button>
@@ -215,6 +221,9 @@
       {#if isLoggedIn}
         <button type="button" class="navbar-link" on:click={() => dispatch('goProfile')}>Profil</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goCart')}>Kosár</button>
+        <button type="button" class="navbar-link navbar-link-logout" on:click={() => dispatch('logout')}>
+          Kijelentkezés
+        </button>
       {:else}
         <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
@@ -290,6 +299,9 @@
             <input type="checkbox" bind:checked={form.isActive} disabled={saveLoading || deleteLoading} />
             Aktív film
           </label>
+          <p class="muted film-active-hint">
+            Ha nincs bejelölve, a film nem jelenik meg a vendégnek a főoldalon és a Filmek oldalon — itt az admin listában továbbra is látható és szerkeszthető.
+          </p>
 
           <div class="form-actions">
             <button type="submit" class="save-btn" disabled={saveLoading || deleteLoading}>

@@ -70,6 +70,18 @@ export function getUserEmail(): string | null {
   return typeof email === 'string' ? email : null;
 }
 
+export function getUserName(): string | null {
+  const payload = getJwtPayload();
+  if (!payload) return null;
+
+  const name =
+    payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ??
+    payload.name ??
+    payload.unique_name;
+
+  return typeof name === 'string' && name.trim() ? name.trim() : null;
+}
+
 export function getUserId(): string | null {
   const payload = getJwtPayload();
   if (!payload) return null;
@@ -219,6 +231,18 @@ export type Film = {
   isActive: boolean;
 };
 
+/** Megjelenési dátum szerint csökkenő, majd cím — így a főoldali 10-es szeletben is előkerülnek a frissebb filmek. */
+export function sortFilmsForDisplay(films: Film[]): Film[] {
+  return [...films].sort((a, b) => {
+    const ta = new Date(a.releaseDate).getTime();
+    const tb = new Date(b.releaseDate).getTime();
+    const da = Number.isFinite(ta) ? ta : 0;
+    const db = Number.isFinite(tb) ? tb : 0;
+    if (db !== da) return db - da;
+    return a.title.localeCompare(b.title, 'hu');
+  });
+}
+
 export async function getFilms(): Promise<Film[]> {
   return req<Film[]>('/films');
 }
@@ -306,11 +330,17 @@ export type Screening = {
   filmId: string;
   filmTitle?: string;
   movieHallId: string;
+  /** MovieHalls.HallName a szerverről */
   movieHallName?: string;
   startTime: string;
   basePrice: number;
   isCancelled: boolean;
 };
+
+export function screeningHallLabel(s: { movieHallName?: string | null }): string {
+  const n = s.movieHallName?.trim();
+  return n && n.length > 0 ? n : '—';
+}
 
 export async function getScreenings(): Promise<Screening[]> {
   return req<Screening[]>('/screenings');

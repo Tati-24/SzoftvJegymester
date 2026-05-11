@@ -1,6 +1,7 @@
 <script lang="ts">
     import { createEventDispatcher } from 'svelte';
     import { register } from './lib/api';
+    import NavbarBackToHome from './NavbarBackToHome.svelte';
     import './Register.css';
 
     const dispatch = createEventDispatcher<{
@@ -10,6 +11,7 @@
       goRegister: void;
       goProfile: void;
       goCart: void;
+      logout: void;
     }>();
     export let isLoggedIn = false;
 
@@ -49,7 +51,7 @@
         error = 'A telefonszám csak számokból, +, szóközből, kötőjelből és zárójelekből állhat (pl. +36 20 123 4567).';
         return;
       }
-  
+
       loading = true;
       try {
         await register({
@@ -76,11 +78,17 @@
   
   <div class="with-navbar">
     <nav class="navbar">
-      <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+      <div class="navbar-brand-group">
+        <NavbarBackToHome on:goHome={() => dispatch('goHome')} />
+        <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+      </div>
       <div class="navbar-menu">
         {#if isLoggedIn}
           <button type="button" class="navbar-link" on:click={() => dispatch('goProfile')}>Profil</button>
           <button type="button" class="navbar-link" on:click={() => dispatch('goCart')}>Kosár</button>
+          <button type="button" class="navbar-link navbar-link-logout" on:click={() => dispatch('logout')}>
+            Kijelentkezés
+          </button>
         {:else}
           <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
           <button type="button" class="navbar-link active" on:click={() => dispatch('goRegister')}>Regisztráció</button>

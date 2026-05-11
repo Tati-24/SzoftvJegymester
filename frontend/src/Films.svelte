@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
-  import { getFilm, getFilms, type Film } from './lib/api';
+  import { getFilm, getFilms, sortFilmsForDisplay, type Film } from './lib/api';
+  import NavbarBackToHome from './NavbarBackToHome.svelte';
   import './styles/Films.css';
 
   export let isLoggedIn = false;
@@ -14,6 +15,7 @@
     goScreenings: { filmTitle?: string };
     goProfile: void;
     goCart: void;
+    logout: void;
   }>();
 
   let films: Film[] = [];
@@ -38,7 +40,7 @@
     error = '';
 
     try {
-      films = await getFilms();
+      films = sortFilmsForDisplay(await getFilms());
       selectedFilm = films.length > 0 ? films[0] : null;
       if (selectedFilm) {
         await loadFilmDetails(selectedFilm.id, false);
@@ -72,7 +74,10 @@
 
 <div class="films-page">
   <nav class="navbar">
-    <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+    <div class="navbar-brand-group">
+      <NavbarBackToHome on:goHome={() => dispatch('goHome')} />
+      <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
+    </div>
     <div class="navbar-menu">
       {#if isAdmin}
         <button type="button" class="navbar-link" on:click={() => dispatch('goFilmEdit')}>Admin felület</button>
@@ -80,6 +85,9 @@
       {#if isLoggedIn}
         <button type="button" class="navbar-link" on:click={() => dispatch('goProfile')}>Profil</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goCart')}>Kosár</button>
+        <button type="button" class="navbar-link navbar-link-logout" on:click={() => dispatch('logout')}>
+          Kijelentkezés
+        </button>
       {:else}
         <button type="button" class="navbar-link" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goRegister')}>Regisztráció</button>
