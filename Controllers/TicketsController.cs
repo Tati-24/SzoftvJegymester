@@ -24,7 +24,7 @@ namespace AspNetServer.Controllers
         [HttpPost("purchase")]
         public async Task<IActionResult> PurchaseTicket([FromBody] TicketPurchaseRequest dto)
         {
-            return await PurchaseTicketInternal(dto, "Screening not found.");
+            return await PurchaseTicketInternal(dto, "Screening not found.", false);
         }
 
 
@@ -42,9 +42,13 @@ namespace AspNetServer.Controllers
                 .Where(t => t.UserId == userId)
                 .Include(t => t.Screening)
                     .ThenInclude(s => s.Film)
+                .Include(t => t.Screening)
+                    .ThenInclude(s => s.MovieHall)
+                .Include(t => t.User)
+                .Include(t => t.Guest)
                 .ToListAsync();
                         
-            return Ok(tickets);
+            return Ok(tickets.Select(ToResponse));
         }
 
         [HttpDelete("{id:guid}")]
@@ -89,7 +93,7 @@ namespace AspNetServer.Controllers
         [HttpPost("cashier/purchase")]
         public async Task<IActionResult> CashierPurchaseTickets( [FromBody] TicketPurchaseRequest dto)
         {
-            return await PurchaseTicketInternal(dto, "The requested screening does not exist.");
+            return await PurchaseTicketInternal(dto, "The requested screening does not exist.", true);
         }
           
                                         
@@ -132,12 +136,14 @@ namespace AspNetServer.Controllers
             var ticket = await _db.Tickets
                .Include(t => t.Screening)
                    .ThenInclude(s => s.Film)
+               .Include(t => t.Screening)
+                   .ThenInclude(s => s.MovieHall)
                .Include(t => t.User)
                .Include(t => t.Guest)
                .FirstOrDefaultAsync(t => t.Id == id);
             if (ticket == null)
                 return NotFound("Invalid ticket id.");
-            return Ok(ticket);
+            return Ok(ToResponse(ticket));
         }
         /// <summary>
         /// Get all tickets, potentially querried; admin only
@@ -151,6 +157,8 @@ namespace AspNetServer.Controllers
             var query = _db.Tickets
             .Include(t => t.Screening)
                 .ThenInclude(s => s.Film)
+            .Include(t => t.Screening)
+                .ThenInclude(s => s.MovieHall)
             .Include(t => t.User)
             .Include(t => t.Guest)
             .AsQueryable();
@@ -166,7 +174,7 @@ namespace AspNetServer.Controllers
 
             var tickets = await query.OrderByDescending(t => t.PurchasedAt).ToListAsync();
 
-            return Ok(tickets);
+            return Ok(tickets.Select(ToResponse));
         }
 
         /// <summary>
@@ -205,7 +213,7 @@ namespace AspNetServer.Controllers
             });
         }
 
-        private async Task<IActionResult> PurchaseTicketInternal(TicketPurchaseRequest dto, string screeningNotFoundMessage)
+        private async Task<IActionResult> PurchaseTicketInternal(TicketPurchaseRequest dto, string screeningNotFoundMessage, bool validateImmediately)
         {
             var screening = await _db.Screenings
                 .Include(s => s.MovieHall)
@@ -230,7 +238,9 @@ namespace AspNetServer.Controllers
             {
                 ScreeningId = dto.ScreeningId,
                 SeatNumber = dto.SeatNumber,
-                TicketPrice = screening.BasePrice
+                TicketPrice = screening.BasePrice,
+                IsValidated = validateImmediately,
+                ValidatedAt = validateImmediately ? DateTime.UtcNow : null
             };
 
             switch (dto.BuyerType)
@@ -281,6 +291,33 @@ namespace AspNetServer.Controllers
                  dto.BuyerType == TicketBuyerType.Guest ? dto.GuestPhone : null
              );
             return Ok(response);
+        }
+
+        private static TicketResponse ToResponse(Tickets ticket)
+        {
+            return new TicketResponse(
+                ticket.Id,
+                ticket.ScreeningId,
+                ticket.Screening.FilmId,
+                ticket.Screening.Film.Title,
+                ticket.Screening.MovieHallId,
+                ticket.Screening.MovieHall.HallName,
+                ticket.Screening.StartTime,
+                ticket.SeatNumber,
+                ticket.TicketPrice,
+                ticket.PurchasedAt,
+                ticket.UserId.HasValue ? TicketBuyerType.RegisteredUser : TicketBuyerType.Guest,
+                ticket.UserId,
+                ticket.User?.Name,
+                ticket.User?.Email,
+                ticket.GuestId,
+                ticket.Guest?.Name,
+                ticket.Guest?.Email,
+                ticket.Guest?.PhoneNumber,
+                ticket.IsValidated,
+                ticket.ValidatedAt,
+                ticket.IsCancelled,
+                ticket.CancelledAt);
         }
 }
 
