@@ -9,6 +9,7 @@
     type Film
   } from './lib/api';
   import NavbarBackToHome from './NavbarBackToHome.svelte';
+  import ConfirmDialog from './ConfirmDialog.svelte';
   import './styles/FilmEdit.css';
   import './styles/AdminDesk.css';
 
@@ -48,6 +49,7 @@
   let error = '';
   let info = '';
   let isNewMode = false;
+  let showDeleteConfirm = false;
 
   let form: FilmForm = emptyForm();
 
@@ -175,16 +177,20 @@
     }
   }
 
-  async function handleDelete() {
+  function openDeleteConfirm() {
     if (isNewMode || !form.id) return;
-    if (!confirm('Biztosan törlöd ezt a filmet? Ez nem vonható vissza.')) return;
+    showDeleteConfirm = true;
+  }
 
+  async function runConfirmedDelete() {
+    if (isNewMode || !form.id) return;
     info = '';
     error = '';
     deleteLoading = true;
     try {
       await deleteFilm(form.id);
       info = 'Film törölve.';
+      showDeleteConfirm = false;
       await loadFilms();
       if (films.length > 0) {
         form = mapFilmToForm(films[0]);
@@ -194,6 +200,7 @@
       }
     } catch (e) {
       error = e instanceof Error ? e.message : 'A törlés nem sikerült.';
+      showDeleteConfirm = false;
     } finally {
       deleteLoading = false;
     }
@@ -328,7 +335,7 @@
             <button
               type="button"
               class="delete-btn"
-              on:click={handleDelete}
+              on:click={openDeleteConfirm}
               disabled={saveLoading || deleteLoading || isNewMode || !form.id}
             >
               {#if deleteLoading}
@@ -349,4 +356,12 @@
       </section>
     {/if}
   </main>
+
+  <ConfirmDialog
+    open={showDeleteConfirm}
+    message="Biztosan törlöd ezt a filmet? Ez nem vonható vissza."
+    busy={deleteLoading}
+    on:confirm={runConfirmedDelete}
+    on:cancel={() => (showDeleteConfirm = false)}
+  />
 </div>

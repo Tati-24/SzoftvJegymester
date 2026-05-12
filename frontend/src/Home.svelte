@@ -100,7 +100,7 @@
     <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
     <div class="navbar-menu">
       <button type="button" class="navbar-link" on:click={() => dispatch('goFilms')}>Filmek</button>
-      <button type="button" class="navbar-link" on:click={() => dispatch('goScreenings')}>Vetítések</button>
+      <button type="button" class="navbar-link" on:click={() => dispatch('goScreenings', {})}>Vetítések</button>
       {#if isAdmin}
         <button type="button" class="navbar-link" on:click={() => dispatch('goFilmEdit')}>Filmek (admin)</button>
         <button type="button" class="navbar-link" on:click={() => dispatch('goAdminHalls')}>Mozitermek</button>
