@@ -94,7 +94,37 @@ export function getUserId(): string | null {
   return typeof id === 'string' ? id : null;
 }
 
+/** Admin jegylistából a pénztár nézetbe: a komponens ezt olvassa és törölje. */
+export const STAFF_TICKET_PREFILL_STORAGE_KEY = 'jegymester_staff_ticket_prefill_v1';
 
+const UUID_IN_TEXT_RE =
+  /\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b/;
+
+/**
+ * Kinyeri az első UUID-t beillesztett szövegből (levél, JSON, link).
+ * Üres string, ha nincs találat — a hívó jelezhet hibát.
+ */
+export function extractUuidFromText(raw: string): string {
+  const t = raw.trim();
+  if (!t) return '';
+  const unwrapped = t.replace(/^\{|\}$/g, '').trim();
+  const m = unwrapped.match(UUID_IN_TEXT_RE);
+  if (m) return m[0];
+  const compact = unwrapped.replace(/\s+/g, '');
+  const m2 = compact.match(UUID_IN_TEXT_RE);
+  return m2 ? m2[0] : '';
+}
+
+/**
+ * Jegy / felhasználó kereséshez: ha van UUID a szövegben, azt adja vissza, különben trimelt nyers input (pl. tiszta UUID beírás).
+ */
+export function normalizeStaffTicketLookupInput(raw: string): string {
+  const extracted = extractUuidFromText(raw);
+  if (extracted) return extracted;
+  const single = raw.trim().replace(/^\{|\}$/g, '').trim();
+  if (UUID_IN_TEXT_RE.test(single)) return single;
+  return raw.trim();
+}
 
 function humanizeApiError(body: string): string {
 
@@ -412,25 +442,69 @@ export type MyTicket = {
   isCancelled?: boolean;
   isValidated?: boolean;
   validatedAt?: string | null;
-    screeningStartTime: string;
-    filmTitle: string;
+  screeningStartTime: string;
+  filmTitle: string;
+  /** Moziterem neve (TicketResponse / vetítés) */
+  movieHallName?: string;
 };
 
+function pickStr(row: Record<string, unknown>, camel: string, pascal: string): string {
+  const v = row[camel] ?? row[pascal];
+  return v == null ? '' : String(v);
+}
+
+function pickNum(row: Record<string, unknown>, camel: string, pascal: string, fallback = 0): number {
+  const v = row[camel] ?? row[pascal];
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function pickBool(row: Record<string, unknown>, camel: string, pascal: string): boolean {
+  const v = row[camel] ?? row[pascal];
+  return v === true || v === 'true';
+}
+
+function pickMaybeStr(row: Record<string, unknown>, camel: string, pascal: string): string | null {
+  const v = row[camel] ?? row[pascal];
+  if (v == null || v === '') return null;
+  return String(v);
+}
+
+function normalizeMyTicket(row: Record<string, unknown>): MyTicket {
+  const id =
+    pickStr(row, 'ticketId', 'TicketId').trim() ||
+    pickStr(row, 'id', 'Id').trim();
+  return {
+    id,
+    ticketId: id,
+    seatNumber: pickNum(row, 'seatNumber', 'SeatNumber'),
+    price: pickNum(row, 'price', 'Price'),
+    purchasedAt: pickStr(row, 'purchasedAt', 'PurchasedAt'),
+    isCancelled: pickBool(row, 'isCancelled', 'IsCancelled'),
+    isValidated: pickBool(row, 'isValidated', 'IsValidated'),
+    validatedAt: pickMaybeStr(row, 'validatedAt', 'ValidatedAt'),
+    screeningStartTime: pickStr(row, 'screeningStartTime', 'ScreeningStartTime'),
+    filmTitle: pickStr(row, 'filmTitle', 'FilmTitle'),
+    movieHallName: pickStr(row, 'movieHallName', 'MovieHallName') || undefined
+  };
+}
+
 export async function getMyTickets(): Promise<MyTicket[]> {
-  const tickets = await req<MyTicket[]>('/tickets/my-tickets');
-  return tickets.map((ticket) => ({
-    ...ticket,
-    id: ticket.id ?? ticket.ticketId ?? ''
-  }));
+  const tickets = await req<Record<string, unknown>[]>('/tickets/my-tickets');
+  return tickets.map(normalizeMyTicket);
 }
 
 export async function cancelMyTicket(ticketId: string): Promise<void> {
+  const id = normalizeStaffTicketLookupInput(ticketId);
+  if (!id) {
+    throw new Error('Nem sikerült felismerni a jegy azonosítóját. Frissítsd a listát, majd próbáld újra.');
+  }
   const headers = new Headers();
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
   let res: Response;
   try {
-    res = await fetch(`${BASE}/tickets/${ticketId}`, {
+    res = await fetch(`${BASE}/tickets/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       headers
     });
@@ -587,6 +661,33 @@ export type AdminTicketRow = {
   cancelledAt?: string | null;
 };
 
+function normalizeAdminTicketRow(row: Record<string, unknown>): AdminTicketRow {
+  return {
+    ticketId: pickStr(row, 'ticketId', 'TicketId'),
+    screeningId: pickStr(row, 'screeningId', 'ScreeningId'),
+    filmId: pickStr(row, 'filmId', 'FilmId'),
+    filmTitle: pickStr(row, 'filmTitle', 'FilmTitle'),
+    movieHallId: pickStr(row, 'movieHallId', 'MovieHallId'),
+    movieHallName: pickStr(row, 'movieHallName', 'MovieHallName'),
+    screeningStartTime: pickStr(row, 'screeningStartTime', 'ScreeningStartTime'),
+    seatNumber: pickNum(row, 'seatNumber', 'SeatNumber'),
+    price: pickNum(row, 'price', 'Price'),
+    purchasedAt: pickStr(row, 'purchasedAt', 'PurchasedAt'),
+    buyerType: (row.buyerType ?? row.BuyerType) as string | number,
+    userId: pickMaybeStr(row, 'userId', 'UserId'),
+    userName: pickMaybeStr(row, 'userName', 'UserName'),
+    userEmail: pickMaybeStr(row, 'userEmail', 'UserEmail'),
+    guestId: pickMaybeStr(row, 'guestId', 'GuestId'),
+    guestName: pickMaybeStr(row, 'guestName', 'GuestName'),
+    guestEmail: pickMaybeStr(row, 'guestEmail', 'GuestEmail'),
+    guestPhone: pickMaybeStr(row, 'guestPhone', 'GuestPhone'),
+    isValidated: pickBool(row, 'isValidated', 'IsValidated'),
+    validatedAt: pickMaybeStr(row, 'validatedAt', 'ValidatedAt'),
+    isCancelled: pickBool(row, 'isCancelled', 'IsCancelled'),
+    cancelledAt: pickMaybeStr(row, 'cancelledAt', 'CancelledAt')
+  };
+}
+
 export type AdminTicketStats = {
   totalRevenue: number;
   totalTicketsSold: number;
@@ -609,7 +710,8 @@ export async function getAdminTickets(filters?: {
   if (filters?.screeningId?.trim()) q.set('screeningId', filters.screeningId.trim());
   if (filters?.date?.trim()) q.set('date', filters.date.trim());
   const qs = q.toString();
-  return req<AdminTicketRow[]>(`/tickets${qs ? `?${qs}` : ''}`);
+  const raw = await req<Record<string, unknown>[]>(`/tickets${qs ? `?${qs}` : ''}`);
+  return raw.map(normalizeAdminTicketRow);
 }
 
 export async function getAdminTicketStats(): Promise<AdminTicketStats> {
@@ -617,16 +719,25 @@ export async function getAdminTicketStats(): Promise<AdminTicketStats> {
 }
 
 export async function getTicketByIdForStaff(ticketId: string): Promise<AdminTicketRow> {
-  return req<AdminTicketRow>(`/tickets/${ticketId}`);
+  const id = normalizeStaffTicketLookupInput(ticketId);
+  if (!id) {
+    throw new Error('Érvénytelen jegyazonosító.');
+  }
+  const row = await req<Record<string, unknown>>(`/tickets/${encodeURIComponent(id)}`);
+  return normalizeAdminTicketRow(row);
 }
 
 export async function validateTicket(ticketId: string): Promise<void> {
+  const id = normalizeStaffTicketLookupInput(ticketId);
+  if (!id) {
+    throw new Error('Érvénytelen jegyazonosító.');
+  }
   const headers = new Headers();
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
   let res: Response;
   try {
-    res = await fetch(`${BASE}/tickets/${ticketId}/validate`, { method: 'PATCH', headers });
+    res = await fetch(`${BASE}/tickets/${encodeURIComponent(id)}/validate`, { method: 'PATCH', headers });
   } catch {
     throw new Error('A szerver nem elérhető.');
   }

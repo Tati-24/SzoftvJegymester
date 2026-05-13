@@ -5,6 +5,9 @@
     cashierPurchaseTicket,
     getScreenings,
     getTicketByIdForStaff,
+    normalizeStaffTicketLookupInput,
+    screeningHallLabel,
+    STAFF_TICKET_PREFILL_STORAGE_KEY,
     validateTicket,
     type AdminTicketRow,
     type Screening
@@ -53,6 +56,7 @@
   let purchaseLoading = false;
   let purchaseError = '';
   let purchaseInfo = '';
+  let copyLookupHint = '';
 
   async function loadScreeningsList() {
     if (!isCashier) return;
@@ -71,15 +75,37 @@
 
   onMount(() => {
     if (isCashier && isLoggedIn) loadScreeningsList();
+    queueMicrotask(() => applyPrefillFromAdmin());
   });
+
+  function applyPrefillFromAdmin() {
+    if (typeof sessionStorage === 'undefined' || !canLookupTicket) return;
+    const v = sessionStorage.getItem(STAFF_TICKET_PREFILL_STORAGE_KEY);
+    if (!v?.trim()) return;
+    sessionStorage.removeItem(STAFF_TICKET_PREFILL_STORAGE_KEY);
+    ticketIdInput = v.trim();
+    void handleLookup();
+  }
+
+  async function copyTicketRef(text: string) {
+    copyLookupHint = '';
+    try {
+      await navigator.clipboard.writeText(text);
+      copyLookupHint = 'A hivatkozás a vágólapra került.';
+      setTimeout(() => (copyLookupHint = ''), 2500);
+    } catch {
+      copyLookupHint = 'A másolás nem sikerült ebben a böngészőben.';
+      setTimeout(() => (copyLookupHint = ''), 3500);
+    }
+  }
 
   async function handleLookup() {
     lookupError = '';
     lookupInfo = '';
     loaded = null;
-    const id = ticketIdInput.trim();
+    const id = normalizeStaffTicketLookupInput(ticketIdInput);
     if (!id) {
-      lookupError = 'Adj meg jegy-azonosítót (GUID).';
+      lookupError = 'Illeszd be a visszaigazolás szövegét, vagy írd be a jegyhez tartozó belső kódot.';
       return;
     }
     if (!canLookupTicket) {
@@ -126,10 +152,13 @@
       return;
     }
     if (purchaseBuyer === 'reg') {
-      if (!purchaseUserId.trim()) {
-        purchaseError = 'Regisztrált vevőhöz kötelező a felhasználó GUID.';
+      const uid = normalizeStaffTicketLookupInput(purchaseUserId);
+      if (!uid) {
+        purchaseError =
+          'Regisztrált vevőhöz szükség van a vevő fiókjára mutató belső kódra — illeszd be a teljes visszaigazolást, vagy a kódot, ha megvan.';
         return;
       }
+      purchaseUserId = uid;
     } else {
       if (!purchaseGuestName.trim() || !purchaseGuestEmail.trim() || !purchaseGuestPhone.trim()) {
         purchaseError = 'Vendég vásárlásnál név, e-mail és telefon kötelező.';
@@ -148,7 +177,11 @@
         guestEmail: purchaseBuyer === 'guest' ? purchaseGuestEmail.trim() : null,
         guestPhone: purchaseBuyer === 'guest' ? purchaseGuestPhone.trim() : null
       });
-      purchaseInfo = 'Jegy eladva (azonnal érvényesítve a pénztári csatornán).';
+      const scr = screenings.find((x) => x.id === purchaseScreeningId);
+      const hallLabel = scr ? screeningHallLabel(scr) : '';
+      purchaseInfo = hallLabel
+        ? `Jegy eladva (azonnal érvényesítve a pénztári csatornán). Terem: ${hallLabel}.`
+        : 'Jegy eladva (azonnal érvényesítve a pénztári csatornán).';
       purchaseSeat = purchaseSeat + 1;
       await loadScreeningsList();
     } catch (e) {
@@ -196,14 +229,22 @@
     {:else}
       <section class="film-form card">
         <h2>Jegy keresése</h2>
-        <p class="muted">Admin és pénztáros megtekintheti a részleteket; érvényesítés csak pénztárosnak engedélyezett.</p>
+        <p class="muted">
+          Admin és pénztáros megtekintheti a részleteket; érvényesítés csak pénztárosnak engedélyezett. A visszaigazolás teljes
+          szövegét is beillesztheted — a rendszer kikeresi belőle a jegyet.
+        </p>
         <div class="film-form" style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end;">
           <label style="flex: 1; min-width: 220px;">
-            Jegy azonosító (GUID)
-            <input type="text" bind:value={ticketIdInput} placeholder="pl. …" />
+            Jegy adatai vagy visszaigazolás
+            <textarea
+              rows="3"
+              bind:value={ticketIdInput}
+              placeholder="Pl. illeszd be az e-mail szövegét, vagy a jegyhez kapott technikai sort…"
+              class="cashier-paste-field"
+            ></textarea>
           </label>
           <button type="button" class="save-btn" on:click={handleLookup} disabled={lookupLoading || !canLookupTicket}>
-            {lookupLoading ? 'Keresés…' : 'Betöltés'}
+            {lookupLoading ? 'Keresés…' : 'Jegy betöltése'}
           </button>
         </div>
         {#if !canLookupTicket}
@@ -214,13 +255,21 @@
 
         {#if loaded}
           <div class="cashier-ticket-detail">
-            <p><strong>Film:</strong> {loaded.filmTitle}</p>
-            <p><strong>Terem:</strong> {loaded.movieHallName}</p>
-            <p><strong>Kezdés:</strong> {new Date(loaded.screeningStartTime).toLocaleString('hu-HU')}</p>
-            <p><strong>Szék:</strong> {loaded.seatNumber}</p>
+            <p class="cashier-ticket-headline">
+              <strong>{loaded.filmTitle}</strong>
+              · {new Date(loaded.screeningStartTime).toLocaleString('hu-HU')}
+              · {loaded.movieHallName}
+              · <strong>szék {loaded.seatNumber}</strong>
+            </p>
             <p><strong>Ár:</strong> {loaded.price} Ft</p>
             <p><strong>Érvényesítve:</strong> {loaded.isValidated ? `igen (${loaded.validatedAt ? new Date(loaded.validatedAt).toLocaleString('hu-HU') : ''})` : 'nem'}</p>
             <p><strong>Lemondva:</strong> {loaded.isCancelled ? 'igen' : 'nem'}</p>
+            <p class="muted cashier-internal-ref">
+              <span>Belső hivatkozás (csak ügyintézéshez):</span>
+              <code class="ticket-ref-code">{loaded.ticketId}</code>
+              <button type="button" class="linkish-btn" on:click={() => { const t = loaded; if (t) void copyTicketRef(t.ticketId); }}>Másolás</button>
+            </p>
+            {#if copyLookupHint}<p class="ok small-hint">{copyLookupHint}</p>{/if}
           </div>
           {#if isCashier && loaded && !loaded.isValidated && !loaded.isCancelled}
             <button type="button" class="save-btn" on:click={handleValidate} disabled={validateLoading}>
@@ -262,14 +311,24 @@
                 Vevő típusa
                 <select bind:value={purchaseBuyer} disabled={purchaseLoading}>
                   <option value="guest">Vendég</option>
-                  <option value="reg">Regisztrált felhasználó (GUID)</option>
+                  <option value="reg">Regisztrált vevő (fiók)</option>
                 </select>
               </label>
               {#if purchaseBuyer === 'reg'}
                 <label>
-                  Felhasználó ID (GUID)
-                  <input type="text" bind:value={purchaseUserId} disabled={purchaseLoading} />
+                  Vevő fiókja
+                  <textarea
+                    rows="2"
+                    bind:value={purchaseUserId}
+                    disabled={purchaseLoading}
+                    placeholder="Illeszd be a vevőhöz tartozó visszaigazolást vagy belső kódot…"
+                    class="cashier-paste-field"
+                  ></textarea>
                 </label>
+                <p class="muted small-hint">
+                  A szerver a vevő belső fiókazonosítóját várja — ezt gyakran egy szövegben kapod meg; beillesztés után a
+                  rendszer kiszedi.
+                </p>
               {:else}
                 <label>
                   Vendég neve
@@ -310,5 +369,46 @@
   }
   .cashier-ticket-detail p {
     margin: 0.35rem 0;
+  }
+  .cashier-ticket-headline {
+    font-size: 1.05rem;
+    line-height: 1.45;
+  }
+  .cashier-internal-ref {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    margin-top: 0.75rem !important;
+    font-size: 0.85rem;
+  }
+  .ticket-ref-code {
+    font-size: 0.8rem;
+    word-break: break-all;
+    background: var(--surface-muted, rgba(0, 0, 0, 0.06));
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+  }
+  .linkish-btn {
+    border: none;
+    background: none;
+    color: var(--accent, #2563eb);
+    cursor: pointer;
+    text-decoration: underline;
+    font: inherit;
+    padding: 0;
+  }
+  .linkish-btn:hover {
+    opacity: 0.85;
+  }
+  .cashier-paste-field {
+    width: 100%;
+    resize: vertical;
+    min-height: 2.5rem;
+    font: inherit;
+  }
+  .small-hint {
+    font-size: 0.88rem;
+    margin: 0.25rem 0 0;
   }
 </style>

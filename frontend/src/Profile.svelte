@@ -160,6 +160,7 @@
           {#each tickets as ticket}
             <li>
               <p><strong>Film:</strong> {ticket.filmTitle ?? 'Ismeretlen film'}</p>
+              <p><strong>Terem:</strong> {ticket.movieHallName?.trim() ? ticket.movieHallName : '—'}</p>
               <p><strong>Időpont:</strong> {formatDateTime(ticket.screeningStartTime)}</p>
               <p><strong>Ülés:</strong> {ticket.seatNumber}</p>
               <p><strong>Ár:</strong> {ticket.price} Ft</p>

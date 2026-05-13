@@ -4,10 +4,13 @@
     getAdminTicketStats,
     getAdminTickets,
     getFilms,
+    getScreenings,
     sortFilmsForDisplay,
+    STAFF_TICKET_PREFILL_STORAGE_KEY,
     type AdminTicketRow,
     type AdminTicketStats,
-    type Film
+    type Film,
+    type Screening
   } from './lib/api';
   import NavbarBackToHome from './NavbarBackToHome.svelte';
   import './styles/FilmEdit.css';
@@ -32,6 +35,7 @@
   }>();
 
   let films: Film[] = [];
+  let screenings: Screening[] = [];
   let tickets: AdminTicketRow[] = [];
   let stats: AdminTicketStats | null = null;
   let filterFilmId = '';
@@ -40,6 +44,17 @@
   let listLoading = false;
   let statsLoading = false;
   let error = '';
+  let copyHint = '';
+
+  $: screeningsForFilter = filterFilmId
+    ? screenings.filter((s) => s.filmId === filterFilmId)
+    : screenings;
+
+  $: {
+    if (filterScreeningId && !screeningsForFilter.some((s) => s.id === filterScreeningId)) {
+      filterScreeningId = '';
+    }
+  }
 
   function buyerLabel(t: AdminTicketRow): string {
     const b = t.buyerType;
@@ -47,11 +62,43 @@
     return t.guestEmail ?? t.guestName ?? 'Vendég';
   }
 
+  function ticketSummary(t: AdminTicketRow): string {
+    const when = new Date(t.screeningStartTime).toLocaleString('hu-HU');
+    return `${t.filmTitle} · ${when} · ${t.movieHallName} · szék ${t.seatNumber}`;
+  }
+
+  function openTicketInCashier(ticketId: string) {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(STAFF_TICKET_PREFILL_STORAGE_KEY, ticketId);
+    }
+    dispatch('goCashier');
+  }
+
+  async function copyTicketId(ticketId: string) {
+    copyHint = '';
+    try {
+      await navigator.clipboard.writeText(ticketId);
+      copyHint = 'Belső hivatkozás a vágólapra került.';
+      setTimeout(() => (copyHint = ''), 2200);
+    } catch {
+      copyHint = 'A másolás nem sikerült.';
+      setTimeout(() => (copyHint = ''), 3000);
+    }
+  }
+
   async function loadFilms() {
     try {
       films = sortFilmsForDisplay(await getFilms());
     } catch {
       films = [];
+    }
+  }
+
+  async function loadScreeningsList() {
+    try {
+      screenings = await getScreenings();
+    } catch {
+      screenings = [];
     }
   }
 
@@ -91,6 +138,7 @@
 
   onMount(async () => {
     await loadFilms();
+    await loadScreeningsList();
     await Promise.all([loadStats(), loadTickets()]);
   });
 </script>
@@ -161,6 +209,9 @@
 
       <section class="film-form card">
         <h2>Jegyek szűrése</h2>
+        <p class="muted admin-filter-hint">
+          A vetítést név és időpont alapján választhatod — nem kell technikai azonosítót beírnod.
+        </p>
         <div class="film-form" style="display: grid; gap: 0.75rem; grid-template-columns: 1fr 1fr; max-width: 720px;">
           <label>
             Film
@@ -172,8 +223,15 @@
             </select>
           </label>
           <label>
-            Vetítés azonosító (GUID)
-            <input type="text" bind:value={filterScreeningId} placeholder="opcionális" />
+            Vetítés (opcionális)
+            <select bind:value={filterScreeningId}>
+              <option value="">Összes vetítés</option>
+              {#each screeningsForFilter as s}
+                <option value={s.id}>
+                  {s.filmTitle ?? 'Film'} — {new Date(s.startTime).toLocaleString('hu-HU')}
+                </option>
+              {/each}
+            </select>
           </label>
           <label style="grid-column: 1 / -1;">
             Nap (helyi dátum)
@@ -198,25 +256,34 @@
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th>Film</th>
-                  <th>Terem</th>
-                  <th>Kezdés</th>
-                  <th>Szék</th>
-                  <th>Ár</th>
+                  <th>Jegy</th>
                   <th>Vevő</th>
-                  <th>Érvényesítve</th>
+                  <th>Ár</th>
+                  <th>Állapot</th>
+                  <th class="admin-actions-col">Műveletek</th>
                 </tr>
               </thead>
               <tbody>
                 {#each tickets as t}
                   <tr class:ticket-cancelled={t.isCancelled}>
-                    <td>{t.filmTitle}</td>
-                    <td>{t.movieHallName}</td>
-                    <td>{new Date(t.screeningStartTime).toLocaleString('hu-HU')}</td>
-                    <td>{t.seatNumber}</td>
-                    <td>{formatFt(t.price)}</td>
+                    <td class="admin-ticket-cell">
+                      <span class="admin-ticket-summary">{ticketSummary(t)}</span>
+                    </td>
                     <td>{buyerLabel(t)}</td>
-                    <td>{t.isValidated ? 'igen' : 'nem'}{t.isCancelled ? ' (lemondva)' : ''}</td>
+                    <td>{formatFt(t.price)}</td>
+                    <td>
+                      {t.isValidated ? 'Érvényesítve' : 'Nincs érvényesítve'}{t.isCancelled ? ' · Lemondva' : ''}
+                    </td>
+                    <td class="admin-actions-col">
+                      <div class="admin-ticket-actions">
+                        <button type="button" class="save-btn admin-ticket-btn" on:click={() => openTicketInCashier(t.ticketId)}>
+                          Pénztár
+                        </button>
+                        <button type="button" class="save-btn admin-ticket-btn secondary" on:click={() => copyTicketId(t.ticketId)}>
+                          Belső kód másolása
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 {/each}
               </tbody>
@@ -224,6 +291,7 @@
           </div>
         {/if}
         {#if error}<p class="error">{error}</p>{/if}
+        {#if copyHint}<p class="ok admin-copy-hint">{copyHint}</p>{/if}
       </section>
     {/if}
   </main>
@@ -232,5 +300,36 @@
 <style>
   :global(.ticket-cancelled) {
     opacity: 0.55;
+  }
+  .admin-filter-hint {
+    margin: 0 0 0.75rem;
+    max-width: 720px;
+  }
+  .admin-ticket-cell {
+    max-width: 22rem;
+  }
+  .admin-ticket-summary {
+    line-height: 1.4;
+    display: inline-block;
+  }
+  .admin-actions-col {
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .admin-ticket-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .admin-ticket-btn {
+    font-size: 0.82rem;
+    padding: 0.35rem 0.6rem;
+  }
+  .admin-ticket-btn.secondary {
+    opacity: 0.92;
+  }
+  .admin-copy-hint {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
   }
 </style>
