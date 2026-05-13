@@ -67,9 +67,17 @@
     return `${t.filmTitle} · ${when} · ${t.movieHallName} · szék ${t.seatNumber}`;
   }
 
-  function openTicketInCashier(ticketId: string) {
+  function buyerEmailForCashierPrefill(t: AdminTicketRow): string {
+    const reg = t.buyerType === 0 || t.buyerType === 'RegisteredUser' || (t.userId?.trim() ?? '') !== '';
+    const e = (reg ? t.userEmail : t.guestEmail)?.trim() ?? '';
+    return e;
+  }
+
+  function openTicketInCashier(t: AdminTicketRow) {
     if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem(STAFF_TICKET_PREFILL_STORAGE_KEY, ticketId);
+      const email = buyerEmailForCashierPrefill(t);
+      if (email) sessionStorage.setItem(STAFF_TICKET_PREFILL_STORAGE_KEY, email);
+      else sessionStorage.removeItem(STAFF_TICKET_PREFILL_STORAGE_KEY);
     }
     dispatch('goCashier');
   }
@@ -276,7 +284,7 @@
                     </td>
                     <td class="admin-actions-col">
                       <div class="admin-ticket-actions">
-                        <button type="button" class="save-btn admin-ticket-btn" on:click={() => openTicketInCashier(t.ticketId)}>
+                        <button type="button" class="save-btn admin-ticket-btn" on:click={() => openTicketInCashier(t)}>
                           Pénztár
                         </button>
                         <button type="button" class="save-btn admin-ticket-btn secondary" on:click={() => copyTicketId(t.ticketId)}>

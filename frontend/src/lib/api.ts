@@ -115,6 +115,21 @@ export function extractUuidFromText(raw: string): string {
   return m2 ? m2[0] : '';
 }
 
+/** Első e-mail cím kinyerése beillesztett szövegből (pl. levél törzse). */
+const EMAIL_IN_TEXT_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+export function extractFirstEmailFromText(raw: string): string {
+  const t = raw.trim();
+  if (!t) return '';
+  const m = t.match(EMAIL_IN_TEXT_RE);
+  return m && m[0] ? m[0].trim() : '';
+}
+
+/** Csak a jegy UUID-ja (nincs más szöveg), későbbi GET-hez. */
+export function isStandaloneTicketGuid(raw: string): boolean {
+  const single = raw.trim().replace(/^\{|\}$/g, '').trim();
+  return UUID_IN_TEXT_RE.test(single);
+}
+
 /**
  * Jegy / felhasználó kereséshez: ha van UUID a szövegben, azt adja vissza, különben trimelt nyers input (pl. tiszta UUID beírás).
  */
@@ -660,6 +675,17 @@ export type AdminTicketRow = {
   isCancelled: boolean;
   cancelledAt?: string | null;
 };
+
+/** Admin jegylistából: regisztrált vagy vendég vevő e-mailje szerint (kliens oldali szűrés). */
+export function filterTicketsByBuyerEmail(tickets: AdminTicketRow[], email: string): AdminTicketRow[] {
+  const key = email.trim().toLowerCase();
+  if (!key) return [];
+  return tickets.filter(
+    (t) =>
+      (t.userEmail && t.userEmail.toLowerCase() === key) ||
+      (t.guestEmail && t.guestEmail.toLowerCase() === key)
+  );
+}
 
 function normalizeAdminTicketRow(row: Record<string, unknown>): AdminTicketRow {
   return {

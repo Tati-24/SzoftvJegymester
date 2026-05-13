@@ -3,6 +3,9 @@
   import {
     TicketBuyerType,
     cashierPurchaseTicket,
+    extractFirstEmailFromText,
+    filterTicketsByBuyerEmail,
+    getAdminTickets,
     getScreenings,
     getTicketByIdForStaff,
     normalizeStaffTicketLookupInput,
@@ -36,8 +39,34 @@
 
   const canLookupTicket = isLoggedIn && (isCashier || isAdmin);
 
+  /** Vevő megjelenítése: név + szerepkör + e-mail (ahogy elérhető). */
+  function ticketBuyerDisplay(t: AdminTicketRow): string {
+    const reg =
+      t.buyerType === 0 ||
+      t.buyerType === 'RegisteredUser' ||
+      (typeof t.userId === 'string' && t.userId.trim() !== '');
+    const name = reg
+      ? (t.userName?.trim() || t.userEmail?.trim() || 'Regisztrált vevő')
+      : (t.guestName?.trim() || t.guestEmail?.trim() || 'Vendég vásárló');
+    const email = (reg ? t.userEmail?.trim() : t.guestEmail?.trim()) || '';
+    const role = reg ? 'regisztrált' : 'vendég';
+    if (email && name !== email) return `${name} (${role}) — ${email}`;
+    if (email) return `${name} (${role})`;
+    return `${name} (${role})`;
+  }
+
+  function ticketBuyerShort(t: AdminTicketRow): string {
+    const reg =
+      t.buyerType === 0 ||
+      t.buyerType === 'RegisteredUser' ||
+      (typeof t.userId === 'string' && t.userId.trim() !== '');
+    if (reg) return (t.userName?.trim() || t.userEmail?.trim() || '—') as string;
+    return (t.guestName?.trim() || t.guestEmail?.trim() || '—') as string;
+  }
+
   let ticketIdInput = '';
   let loaded: AdminTicketRow | null = null;
+  let emailMatches: AdminTicketRow[] = [];
   let lookupLoading = false;
   let lookupError = '';
   let lookupInfo = '';
@@ -87,11 +116,20 @@
     void handleLookup();
   }
 
+  function clearLookupForm() {
+    ticketIdInput = '';
+    loaded = null;
+    emailMatches = [];
+    lookupError = '';
+    lookupInfo = '';
+    copyLookupHint = '';
+  }
+
   async function copyTicketRef(text: string) {
     copyLookupHint = '';
     try {
       await navigator.clipboard.writeText(text);
-      copyLookupHint = 'A hivatkozás a vágólapra került.';
+      copyLookupHint = 'Az azonosító a vágólapra került.';
       setTimeout(() => (copyLookupHint = ''), 2500);
     } catch {
       copyLookupHint = 'A másolás nem sikerült ebben a böngészőben.';
@@ -99,25 +137,56 @@
     }
   }
 
+  function selectEmailTicket(row: AdminTicketRow) {
+    loaded = row;
+    emailMatches = [];
+    lookupError = '';
+    lookupInfo = 'Kiválasztva — a jegy adatai lent láthatók.';
+  }
+
   async function handleLookup() {
     lookupError = '';
     lookupInfo = '';
     loaded = null;
-    const id = normalizeStaffTicketLookupInput(ticketIdInput);
-    if (!id) {
-      lookupError = 'Illeszd be a visszaigazolás szövegét, vagy írd be a jegyhez tartozó belső kódot.';
-      return;
-    }
+    emailMatches = [];
+
     if (!canLookupTicket) {
-      lookupError = 'Jegy lekérdezéshez admin vagy pénztáros fiók szükséges.';
+      lookupError = 'A jegykereséshez jelentkezz be pénztáros vagy admin fiókkal.';
       return;
     }
+
+    const raw = ticketIdInput.trim();
+    if (!raw) {
+      lookupError = 'Írd be az e-mail címet.';
+      return;
+    }
+
     lookupLoading = true;
+
     try {
-      loaded = await getTicketByIdForStaff(id);
-      lookupInfo = 'Jegy betöltve.';
+      const emailAddr = extractFirstEmailFromText(ticketIdInput);
+      if (emailAddr) {
+        if (!isAdmin) {
+          lookupError = 'E-mail alapú kereséshez admin jog szükséges.';
+          return;
+        }
+        const all = await getAdminTickets({});
+        const rows = filterTicketsByBuyerEmail(all, emailAddr);
+        if (rows.length === 0) {
+          lookupError = 'Nincs jegy ehhez az e-mailhez (regisztrált vagy vendég vevő címe szerint).';
+        } else if (rows.length === 1) {
+          loaded = rows[0];
+          lookupInfo = 'Egy jegy tartozik ehhez az e-mailhez — megjelenítve.';
+        } else {
+          emailMatches = rows;
+          lookupInfo = `${rows.length} jegy ehhez az e-mailhez — válassz lent, majd kattints a „Megnyitás” gombra.`;
+        }
+        return;
+      }
+
+      lookupError = 'Írd be az e-mail címet.';
     } catch (e) {
-      lookupError = e instanceof Error ? e.message : 'A jegy nem található.';
+      lookupError = e instanceof Error ? e.message : 'A keresés nem sikerült.';
     } finally {
       lookupLoading = false;
     }
@@ -227,31 +296,87 @@
         <button type="button" class="save-btn" on:click={() => dispatch('goLogin')}>Bejelentkezés</button>
       </section>
     {:else}
-      <section class="film-form card">
-        <h2>Jegy keresése</h2>
-        <p class="muted">
-          Admin és pénztáros megtekintheti a részleteket; érvényesítés csak pénztárosnak engedélyezett. A visszaigazolás teljes
-          szövegét is beillesztheted — a rendszer kikeresi belőle a jegyet.
+      <section class="film-form card cashier-lookup-card">
+        <h2>Jegy megkeresése</h2>
+        <p class="muted cashier-lookup-lead">
+          A jegyet a <strong>vevő e-mail címe</strong> alapján lehet megkeresni. A részleteket admin és pénztáros is látja;
+          az <strong>érvényesítést (beléptetést)</strong> csak <strong>pénztáros</strong> végezheti el.
         </p>
-        <div class="film-form" style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end;">
-          <label style="flex: 1; min-width: 220px;">
-            Jegy adatai vagy visszaigazolás
+
+        <div class="cashier-lookup-field-row">
+          <label class="cashier-lookup-label">
+            <span class="cashier-lookup-label-text">Írd be az e-mail címet</span>
             <textarea
               rows="3"
               bind:value={ticketIdInput}
-              placeholder="Pl. illeszd be az e-mail szövegét, vagy a jegyhez kapott technikai sort…"
+              placeholder="Írd be az e-mail címet"
               class="cashier-paste-field"
+              aria-describedby="cashier-lookup-help"
             ></textarea>
           </label>
-          <button type="button" class="save-btn" on:click={handleLookup} disabled={lookupLoading || !canLookupTicket}>
-            {lookupLoading ? 'Keresés…' : 'Jegy betöltése'}
-          </button>
+          <div class="cashier-lookup-actions">
+            <button type="button" class="save-btn" on:click={handleLookup} disabled={lookupLoading || !canLookupTicket}>
+              {lookupLoading ? 'Keresés…' : 'Keresés'}
+            </button>
+            <button
+              type="button"
+              class="cashier-btn-outline"
+              on:click={clearLookupForm}
+              disabled={lookupLoading || (!ticketIdInput.trim() && !loaded && emailMatches.length === 0)}
+            >
+              Mező ürítése
+            </button>
+          </div>
         </div>
+        <p id="cashier-lookup-help" class="visually-hidden">
+          {#if isAdmin}
+            Admin: jegy megkeresése a vevő e-mail címe alapján. Érvényesítés csak pénztárosnak engedélyezett.
+          {:else}
+            Pénztáros: jegy megkeresése a vevő e-mail címe alapján; a kereséshez admin jog kell. Érvényesítés pénztárosnak.
+          {/if}
+        </p>
+
         {#if !canLookupTicket}
-          <p class="error">Ehhez a művelethez admin vagy pénztáros jogkör kell.</p>
+          <p class="error">A jegykereséshez pénztáros vagy admin jogkör szükséges.</p>
         {/if}
-        {#if lookupInfo}<p class="ok">{lookupInfo}</p>{/if}
-        {#if lookupError}<p class="error">{lookupError}</p>{/if}
+        {#if lookupInfo}<p class="ok cashier-lookup-feedback">{lookupInfo}</p>{/if}
+        {#if lookupError}<p class="error cashier-lookup-feedback">{lookupError}</p>{/if}
+
+        {#if emailMatches.length > 0}
+          <div class="cashier-email-results">
+            <h3 class="cashier-email-results-title">Találatok ehhez az e-mailhez ({emailMatches.length})</h3>
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Film</th>
+                  <th>Kezdés</th>
+                  <th>Terem</th>
+                  <th>Szék</th>
+                  <th>Vevő</th>
+                  <th>Státusz</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each emailMatches as row}
+                  <tr class:ticket-cancelled={row.isCancelled}>
+                    <td>{row.filmTitle}</td>
+                    <td>{new Date(row.screeningStartTime).toLocaleString('hu-HU')}</td>
+                    <td>{row.movieHallName}</td>
+                    <td>{row.seatNumber}</td>
+                    <td class="cashier-table-buyer">{ticketBuyerShort(row)}</td>
+                    <td>
+                      {row.isCancelled ? 'lemondva' : row.isValidated ? 'validált' : 'aktív'}
+                    </td>
+                    <td>
+                      <button type="button" class="linkish-btn" on:click={() => selectEmailTicket(row)}>Megnyitás</button>
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
 
         {#if loaded}
           <div class="cashier-ticket-detail">
@@ -261,11 +386,15 @@
               · {loaded.movieHallName}
               · <strong>szék {loaded.seatNumber}</strong>
             </p>
+            <p class="cashier-ticket-buyer">
+              <strong>Vevő:</strong>
+              {ticketBuyerDisplay(loaded)}
+            </p>
             <p><strong>Ár:</strong> {loaded.price} Ft</p>
             <p><strong>Érvényesítve:</strong> {loaded.isValidated ? `igen (${loaded.validatedAt ? new Date(loaded.validatedAt).toLocaleString('hu-HU') : ''})` : 'nem'}</p>
             <p><strong>Lemondva:</strong> {loaded.isCancelled ? 'igen' : 'nem'}</p>
             <p class="muted cashier-internal-ref">
-              <span>Belső hivatkozás (csak ügyintézéshez):</span>
+              <span>Jegyazonosító (másolható, ügyintézéshez):</span>
               <code class="ticket-ref-code">{loaded.ticketId}</code>
               <button type="button" class="linkish-btn" on:click={() => { const t = loaded; if (t) void copyTicketRef(t.ticketId); }}>Másolás</button>
             </p>
@@ -354,7 +483,10 @@
       {:else if isAdmin}
         <section class="film-form card">
           <h2>Pénztári eladás</h2>
-          <p class="muted">A helyszíni eladás csak pénztáros szerepkörrel érhető el. Adminként a jegy lekérdezés és az admin jegylisták használhatók.</p>
+          <p class="muted">
+            A helyszíni eladás csak pénztáros szerepkörrel érhető el. Adminként a fenti jegy megkeresése és az admin jegylisták
+            használhatók.
+          </p>
         </section>
       {/if}
     {/if}
@@ -362,6 +494,80 @@
 </div>
 
 <style>
+  .cashier-lookup-lead {
+    margin: 0 0 0.65rem;
+    line-height: 1.5;
+  }
+  .cashier-lookup-field-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+    margin-top: 1rem;
+  }
+  .cashier-lookup-label {
+    flex: 1;
+    min-width: min(100%, 220px);
+  }
+  .cashier-lookup-label-text {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+  }
+  .cashier-lookup-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 10.5rem;
+  }
+  .cashier-btn-outline {
+    font: inherit;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.2));
+    background: transparent;
+    color: inherit;
+  }
+  .cashier-btn-outline:hover:not(:disabled) {
+    opacity: 0.88;
+    border-color: var(--accent, #c41e3a);
+  }
+  .cashier-btn-outline:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .cashier-lookup-feedback {
+    margin-top: 0.75rem;
+  }
+  .cashier-email-results-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .cashier-ticket-buyer {
+    margin: 0.5rem 0 0.35rem;
+    line-height: 1.45;
+  }
+  .cashier-table-buyer {
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .cashier-ticket-detail {
     margin: 1rem 0;
     padding: 0.75rem 0;
@@ -406,6 +612,13 @@
     resize: vertical;
     min-height: 2.5rem;
     font: inherit;
+  }
+  .cashier-email-results {
+    margin-top: 1rem;
+    overflow-x: auto;
+  }
+  .cashier-email-results :global(.ticket-cancelled) {
+    opacity: 0.55;
   }
   .small-hint {
     font-size: 0.88rem;
