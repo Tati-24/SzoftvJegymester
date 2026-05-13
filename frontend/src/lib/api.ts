@@ -108,7 +108,7 @@ function humanizeApiError(body: string): string {
     'Ticket already purchased.': 'Erről a vetítésről erre a székre már van eladott jegy.',
     'Invalid User identification.': 'Érvénytelen felhasználó-azonosítás. Jelentkezz be újra.',
     'User does not own that ticket.': 'Ez a jegy nem a fiókodhoz tartozik.',
-    'Invalid ticket id': 'Érvénytelen jegyazonosító.',
+    'Invalid ticket id.': 'Érvénytelen jegyazonosító.',
     'Movie hall already exists with this name.': 'Ilyen néven már van moziterem.',
     'Another movie hall already uses this name.': 'Ezt a nevet egy másik terem már használja.',
     'Movie hall cannot be removed while screenings are attached.':
@@ -405,6 +405,7 @@ export async function purchaseTicket(data: PurchaseTicketInput) {
 
 export type MyTicket = {
   id: string;
+  ticketId?: string;
   seatNumber: number;
   price: number;
   purchasedAt: string;
@@ -416,7 +417,11 @@ export type MyTicket = {
 };
 
 export async function getMyTickets(): Promise<MyTicket[]> {
-  return req<MyTicket[]>('/tickets/my-tickets');
+  const tickets = await req<MyTicket[]>('/tickets/my-tickets');
+  return tickets.map((ticket) => ({
+    ...ticket,
+    id: ticket.id ?? ticket.ticketId ?? ''
+  }));
 }
 
 export async function cancelMyTicket(ticketId: string): Promise<void> {
