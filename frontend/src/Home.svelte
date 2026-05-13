@@ -5,6 +5,7 @@
 
   export let isLoggedIn = false;
   export let isAdmin = false;
+  export let isCashier = false;
 
   const dispatch = createEventDispatcher<{
     goLogin: void;
@@ -12,6 +13,10 @@
     goHome: void;
     goFilms: void;
     goFilmEdit: void;
+    goAdminHalls: void;
+    goAdminScreenings: void;
+    goAdminTickets: void;
+    goCashier: void;
     goScreenings: { filmTitle?: string };
     goProfile: void;
     goCart: void;
@@ -94,8 +99,16 @@
   <nav class="navbar">
     <button type="button" class="navbar-brand navbar-brand-link" on:click={() => dispatch('goHome')}>Jegymester</button>
     <div class="navbar-menu">
+      <button type="button" class="navbar-link" on:click={() => dispatch('goFilms')}>Filmek</button>
+      <button type="button" class="navbar-link" on:click={() => dispatch('goScreenings', {})}>Vetítések</button>
       {#if isAdmin}
-        <button type="button" class="navbar-link" on:click={() => dispatch('goFilmEdit')}>Admin felület</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goFilmEdit')}>Filmek (admin)</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goAdminHalls')}>Mozitermek</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goAdminScreenings')}>Vetítések (admin)</button>
+        <button type="button" class="navbar-link" on:click={() => dispatch('goAdminTickets')}>Jegyek (admin)</button>
+      {/if}
+      {#if isCashier || isAdmin}
+        <button type="button" class="navbar-link" on:click={() => dispatch('goCashier')}>Pénztár</button>
       {/if}
       {#if isLoggedIn}
         <button type="button" class="navbar-link" on:click={() => dispatch('goProfile')}>Profil</button>

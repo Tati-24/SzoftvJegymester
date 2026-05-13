@@ -59,6 +59,10 @@ export function isAdmin(): boolean {
   return getUserRole() === 'ADMIN';
 }
 
+export function isCashier(): boolean {
+  return getUserRole() === 'CASHIER';
+}
+
 export function getUserEmail(): string | null {
   const payload = getJwtPayload();
   if (!payload) return null;
@@ -104,7 +108,17 @@ function humanizeApiError(body: string): string {
     'Ticket already purchased.': 'Erről a vetítésről erre a székre már van eladott jegy.',
     'Invalid User identification.': 'Érvénytelen felhasználó-azonosítás. Jelentkezz be újra.',
     'User does not own that ticket.': 'Ez a jegy nem a fiókodhoz tartozik.',
-    'Invalid ticket id': 'Érvénytelen jegyazonosító.'
+    'Invalid ticket id.': 'Érvénytelen jegyazonosító.',
+    'Movie hall already exists with this name.': 'Ilyen néven már van moziterem.',
+    'Another movie hall already uses this name.': 'Ezt a nevet egy másik terem már használja.',
+    'Movie hall cannot be removed while screenings are attached.':
+      'A termet nem lehet törölni, amíg van hozzá vetítés.',
+    'Screening already exists with these parameters.': 'Ilyen vetítés már létezik (film, terem, időpont).',
+    'Screening not found.': 'A vetítés nem található.',
+    'Ticket cannot be deleted within 4 hours of the screening.':
+      'A jegyet a vetítés előtt 4 órán belül nem lehet törölni.',
+    'No more tickets can be purchased because the movie hall is full.': 'A terem megtelt, nincs több hely.',
+    'This screening has been cancelled.': 'Ezt a vetítést lemondták.'
   };
 
   return map[t] ?? body;
@@ -391,6 +405,7 @@ export async function purchaseTicket(data: PurchaseTicketInput) {
 
 export type MyTicket = {
   id: string;
+  ticketId?: string;
   seatNumber: number;
   price: number;
   purchasedAt: string;
@@ -402,7 +417,11 @@ export type MyTicket = {
 };
 
 export async function getMyTickets(): Promise<MyTicket[]> {
-  return req<MyTicket[]>('/tickets/my-tickets');
+  const tickets = await req<MyTicket[]>('/tickets/my-tickets');
+  return tickets.map((ticket) => ({
+    ...ticket,
+    id: ticket.id ?? ticket.ticketId ?? ''
+  }));
 }
 
 export async function cancelMyTicket(ticketId: string): Promise<void> {
@@ -423,4 +442,221 @@ export async function cancelMyTicket(ticketId: string): Promise<void> {
     const msg = await res.text();
     throw new Error(humanizeApiError(msg) || `Hiba: ${res.status}`);
   }
+}
+
+export type MovieHall = {
+  id: string;
+  hallName: string;
+  seatCount: number;
+  isOccupied: boolean;
+};
+
+export async function getMovieHalls(): Promise<MovieHall[]> {
+  return req<MovieHall[]>('/movie-halls');
+}
+
+export async function getMovieHall(id: string): Promise<MovieHall> {
+  return req<MovieHall>(`/movie-halls/${id}`);
+}
+
+export type MovieHallCreateInput = {
+  hallName: string;
+  seatCount: number;
+  isOccupied?: boolean;
+};
+
+export async function createMovieHall(data: MovieHallCreateInput): Promise<MovieHall> {
+  return req<MovieHall>('/movie-halls/admin/upload', {
+    method: 'POST',
+    body: JSON.stringify({
+      hallName: data.hallName.trim(),
+      seatCount: data.seatCount,
+      isOccupied: data.isOccupied ?? false
+    })
+  });
+}
+
+export type MovieHallUpdateInput = {
+  hallName: string | null;
+  seatCount: number | null;
+  isOccupied: boolean | null;
+};
+
+export async function updateMovieHall(id: string, data: MovieHallUpdateInput): Promise<MovieHall> {
+  return req<MovieHall>(`/movie-halls/admin/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      hallName: data.hallName,
+      seatCount: data.seatCount,
+      isOccupied: data.isOccupied
+    })
+  });
+}
+
+export async function deleteMovieHall(id: string): Promise<void> {
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/movie-halls/admin/${id}`, { method: 'DELETE', headers });
+  } catch {
+    throw new Error('A szerver nem elérhető.');
+  }
+
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(humanizeApiError(msg) || `Hiba: ${res.status}`);
+  }
+}
+
+export type ScreeningCreateInput = {
+  filmId: string;
+  movieHallId: string;
+  startTime: string;
+  basePrice: number;
+};
+
+export async function createScreening(data: ScreeningCreateInput): Promise<Screening> {
+  return req<Screening>('/screenings/admin/upload', {
+    method: 'POST',
+    body: JSON.stringify({
+      filmId: data.filmId,
+      movieHallId: data.movieHallId,
+      startTime: data.startTime,
+      basePrice: data.basePrice
+    })
+  });
+}
+
+export type ScreeningUpdateInput = {
+  filmId: string | null;
+  movieHallId: string | null;
+  startTime: string | null;
+  basePrice: number | null;
+  isCancelled: boolean | null;
+};
+
+export async function updateScreening(id: string, data: ScreeningUpdateInput): Promise<Screening> {
+  return req<Screening>(`/screenings/admin/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      filmId: data.filmId,
+      movieHallId: data.movieHallId,
+      startTime: data.startTime,
+      basePrice: data.basePrice,
+      isCancelled: data.isCancelled
+    })
+  });
+}
+
+export type ScreeningDeleteResult = {
+  message: string;
+  filmId: string;
+  filmTitle: string;
+  movieHallId: string;
+  movieHallName: string;
+};
+
+export async function deleteScreening(id: string): Promise<ScreeningDeleteResult> {
+  return req<ScreeningDeleteResult>(`/screenings/admin/${id}`, { method: 'DELETE' });
+}
+
+export type AdminTicketRow = {
+  ticketId: string;
+  screeningId: string;
+  filmId: string;
+  filmTitle: string;
+  movieHallId: string;
+  movieHallName: string;
+  screeningStartTime: string;
+  seatNumber: number;
+  price: number;
+  purchasedAt: string;
+  buyerType: string | number;
+  userId?: string | null;
+  userName?: string | null;
+  userEmail?: string | null;
+  guestId?: string | null;
+  guestName?: string | null;
+  guestEmail?: string | null;
+  guestPhone?: string | null;
+  isValidated: boolean;
+  validatedAt?: string | null;
+  isCancelled: boolean;
+  cancelledAt?: string | null;
+};
+
+export type AdminTicketStats = {
+  totalRevenue: number;
+  totalTicketsSold: number;
+  topMovies: Array<{
+    filmId: string;
+    movieTitle: string;
+    ticketsSold: number;
+    revenue: number;
+  }>;
+  generatedAt: string;
+};
+
+export async function getAdminTickets(filters?: {
+  filmId?: string | null;
+  screeningId?: string | null;
+  date?: string | null;
+}): Promise<AdminTicketRow[]> {
+  const q = new URLSearchParams();
+  if (filters?.filmId?.trim()) q.set('filmId', filters.filmId.trim());
+  if (filters?.screeningId?.trim()) q.set('screeningId', filters.screeningId.trim());
+  if (filters?.date?.trim()) q.set('date', filters.date.trim());
+  const qs = q.toString();
+  return req<AdminTicketRow[]>(`/tickets${qs ? `?${qs}` : ''}`);
+}
+
+export async function getAdminTicketStats(): Promise<AdminTicketStats> {
+  return req<AdminTicketStats>('/tickets/stats');
+}
+
+export async function getTicketByIdForStaff(ticketId: string): Promise<AdminTicketRow> {
+  return req<AdminTicketRow>(`/tickets/${ticketId}`);
+}
+
+export async function validateTicket(ticketId: string): Promise<void> {
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/tickets/${ticketId}/validate`, { method: 'PATCH', headers });
+  } catch {
+    throw new Error('A szerver nem elérhető.');
+  }
+
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(humanizeApiError(msg) || `Hiba: ${res.status}`);
+  }
+}
+
+export async function cashierPurchaseTicket(data: PurchaseTicketInput) {
+  return req<{
+    screeningId?: string | null;
+    seatNumber: number;
+    price: number;
+    purchasedAt: string;
+    userId?: string | null;
+    guestName?: string | null;
+    guestEmail?: string | null;
+    guestPhone?: string | null;
+  }>('/tickets/cashier/purchase', {
+    method: 'POST',
+    body: JSON.stringify({
+      screeningId: data.screeningId,
+      seatNumber: data.seatNumber,
+      buyerType: data.buyerType,
+      userId: data.userId ?? null,
+      guestName: data.guestName ?? null,
+      guestEmail: data.guestEmail ?? null,
+      guestPhone: data.guestPhone ?? null
+    })
+  });
 }

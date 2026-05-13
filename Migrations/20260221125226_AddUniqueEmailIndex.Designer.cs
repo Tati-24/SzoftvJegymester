@@ -46,7 +46,7 @@ namespace AspNetServer.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<int>("Lengt")
+                    b.Property<int>("Length")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("ReleaseDate")
