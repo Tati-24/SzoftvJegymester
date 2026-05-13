@@ -12,7 +12,8 @@
   import AdminScreenings from './AdminScreenings.svelte';
   import AdminTickets from './AdminTickets.svelte';
   import CashierDesk from './CashierDesk.svelte';
-  import { isAdmin, isAuthenticated, isCashier, setToken } from './lib/api';
+  import { getUserId, isAdmin, isAuthenticated, isCashier, setToken } from './lib/api';
+  import { cartStore } from './lib/cart';
 
   const SITE_TITLE = 'Jegymester';
   const TITLE_SEP = ' \u2013 ';
@@ -175,9 +176,12 @@
   let loggedIn = isAuthenticated();
   let admin = isAdmin();
   let cashier = isCashier();
+  let activeUserId = loggedIn ? getUserId() : null;
 
   beforeUpdate(() => {
     if (!loggedIn || isAuthenticated()) return;
+    cartStore.clear();
+    activeUserId = null;
     loggedIn = false;
     admin = false;
     cashier = false;
@@ -230,6 +234,11 @@
   }
 
   function handleLoggedIn() {
+    const nextUserId = getUserId();
+    if (activeUserId && nextUserId && activeUserId !== nextUserId) {
+      cartStore.clear();
+    }
+    activeUserId = nextUserId;
     loggedIn = true;
     admin = isAdmin();
     cashier = isCashier();
@@ -348,7 +357,9 @@
   }
 
   function handleLogout() {
+    cartStore.clear();
     setToken(null);
+    activeUserId = null;
     loggedIn = false;
     admin = false;
     cashier = false;
