@@ -49,13 +49,13 @@ public class AuthController : ControllerBase
         var user = await _db.Users.SingleOrDefaultAsync(u => u.Email == email);
         if(user == null)
         {
-            return Conflict("Email not registered or incorrect");
+            return Unauthorized("Incorrect email or password.");
         }
 
         var result = _hasher.VerifyHashedPassword(user, user.PassWordHash, dto.Password);
         if(result == PasswordVerificationResult.Failed)
         {
-            return Unauthorized();
+            return Unauthorized("Incorrect email or password.");
         }
 
         return _tokens.CreateToken(user);

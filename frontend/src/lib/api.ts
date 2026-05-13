@@ -98,9 +98,12 @@ export function getUserId(): string | null {
 
 function humanizeApiError(body: string): string {
 
-  const t = body.trim().replace(/^["']+|["']+$/g, '');
+  const t = extractApiErrorText(body).trim().replace(/^["']+|["']+$/g, '');
 
   const map: Record<string, string> = {
+    Unauthorized: 'Hibás e-mail cím vagy jelszó.',
+    'Incorrect email or password.': 'Hibás e-mail cím vagy jelszó.',
+    'Email not registered or incorrect': 'Hibás e-mail cím vagy jelszó.',
     'For not registered users giving phone number and email is mandatory.':
       'A szerver nem fogadja el a belépésed (néha ez lejárt token). Jelentkezz be újra — vagy töltsd ki az adatokat vendéghez a vetítésnél kosár előtt.',
     'For guest purchases name, phone number and email are mandatory.':
@@ -121,8 +124,26 @@ function humanizeApiError(body: string): string {
     'This screening has been cancelled.': 'Ezt a vetítést lemondták.'
   };
 
-  return map[t] ?? body;
+  return map[t] ?? t;
 
+}
+
+function extractApiErrorText(body: string): string {
+  try {
+    const parsed = JSON.parse(body) as unknown;
+    if (parsed && typeof parsed === 'object') {
+      const problem = parsed as { detail?: unknown; title?: unknown };
+      if (typeof problem.detail === 'string' && problem.detail.trim()) {
+        return problem.detail;
+      }
+      if (typeof problem.title === 'string' && problem.title.trim()) {
+        return problem.title;
+      }
+    }
+  } catch {
+  }
+
+  return body;
 }
 
 
